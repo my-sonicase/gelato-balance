@@ -1,0 +1,962 @@
+Build a professional gelato recipe balancing web application. This is a standalone Next.js project that will eventually be merged into a larger education platform — so the design system must be identical to that platform (same fonts, colors, tokens). Read everything below before writing any code.
+
+This prompt is based on a reference Italian gelato balancing software called "BilanciaLi — Bilanciatore di Gelati". Replicate its feature set, tab structure, ingredient groups, and calculation logic as described below.
+
+---
+
+## WHAT THIS IS
+
+A professional tool used by gelato makers to balance recipes. "Balancing" means adjusting ingredient quantities until the mix hits precise targets for sugar content, fat, SLNG (milk solids non-fat), other solids, total solids, sweetening power (POD), and antifreeze power (PAC) — all simultaneously. Think of it like a chemistry worksheet that updates in real time.
+
+There are three apps in this project (build in this order):
+1. **Gelato Balancer** (Professional) — full balancing software, Phase 1, build this first
+2. **Home Recipe App** (Simplified) — guided wizard, outputs a home recipe, Phase 2
+3. **Pro Recipe App** (Simplified Professional) — guided wizard, outputs a professional recipe with full breakdown, Phase 2
+
+This prompt covers Phase 1 only: the full Balancing Software.
+
+---
+
+## TECH STACK
+
+- **Framework:** Next.js (App Router, TypeScript)
+- **State management:** Zustand — the recipe builder has complex interdependent state (ingredient list, calculated totals, ingredient DB). Do not use React Context for this; use Zustand.
+- **Styling:** Tailwind CSS + CSS custom properties (same design tokens as main platform — see Design System section)
+- **Persistence:** localStorage only for Phase 1. No backend, no auth. Users can save/load recipes locally.
+- **Charts:** Recharts — for the balance bar chart showing how close the recipe is to target ranges
+- **Export:** browser `window.print()` with a print stylesheet. No PDF library needed.
+- **Math:** pure TypeScript functions. All gelato calculations happen client-side. No server needed for calculations.
+- **i18n:** next-intl — EN + IT from day 1, exactly like the main platform. Routes: `/en/balancer/*` and `/it/balancer/*`. Every UI string, label, tab name, parameter name, and error message must have both an English and Italian translation. No hardcoded strings in components — all go through `useTranslations()`.
+
+Do NOT use: any server actions or API routes for calculations (pure client-side), any external calculation APIs.
+
+---
+
+## APPLICATION STRUCTURE — 6 TABS
+
+The app is organized into exactly 6 tabs, replicating BilanciaLi:
+
+```
+EN: [ Instructions ] [ Configuration ] [ Balancing ] [ Saved Recipes ] [ Calculators ] [ Ingredients ]
+IT: [ Istruzioni ]   [ Configurazione ] [ Bilanciamento ] [ Gelati Salvati ] [ Calcolatori ] [ Ingredienti ]
+```
+
+Each tab is described in detail below.
+
+---
+
+## TAB 1 — ISTRUZIONI (Instructions / Welcome)
+
+A static informational page explaining how to use the balancer. Content:
+- What the balancer does (balance a gelato recipe against professional target ranges)
+- How to use each tab (brief description of each)
+- Glossary of key terms: POD, PAC, SLNG, Solidi Totali, Overrun, Temperatura di Servizio
+- Credits: formulas based on Angelo Corvitto's gelato science methodology
+
+---
+
+## TAB 2 — CONFIGURAZIONE (Target Range Configuration)
+
+Displays and allows editing of target ranges for each of the 7 profile types. Each cell is an editable number input.
+
+### Profile types (columns):
+1. **Gelato** (classic milk-based)
+2. **Sorbetto** (sorbet)
+3. **Granita**
+4. **Gelato Vegan**
+5. **Gelato Gastronomico** (savory)
+6. **Personalizzato 1** (fully user-defined)
+7. **Personalizzato 2** (fully user-defined)
+
+### Parameters (rows) with default values:
+
+| Parameter | Gelato | Sorbetto | Granita | Vegan | Gastronomico | Pers. 1 | Pers. 2 |
+|-----------|--------|----------|---------|-------|--------------|---------|---------|
+| Zuccheri min % | 16 | 20 | 15 | 16 | 14 | 0 | 0 |
+| Zuccheri max % | 22 | 32 | 20 | 22 | 22 | 100 | 100 |
+| Grassi min % | 5 | 0 | 0 | 4 | 4 | 0 | 0 |
+| Grassi max % | 12 | 4 | 4 | 12 | 15 | 100 | 100 |
+| SLNG min % | 7.5 | 0 | 0 | 0 | 4 | 0 | 0 |
+| SLNG max % | 11.5 | 2 | 2 | 0.5 | 10 | 100 | 100 |
+| Altri Solidi min % | 0 | 0 | 0 | 6 | 0 | 0 | 0 |
+| Altri Solidi max % | 5 | 5 | 5 | 16 | 15 | 100 | 100 |
+| Solidi Totali min % | 35 | 25 | 15 | 35 | 25 | 0 | 0 |
+| Solidi Totali max % | 40 | 35 | 25 | 40 | 50 | 100 | 100 |
+| POD min % | 16 | 17 | 15 | 16 | 5 | 0 | 0 |
+| POD max % | 20 | 25 | 20 | 20 | 12 | 100 | 100 |
+| PAC min | 26 | 28 | 12 | 26 | 25 | 0 | 0 |
+| PAC max | 31 | 35 | 17 | 31 | 31 | 100 | 100 |
+| Frutta min % | 20 | 30 | 30 | 30 | 20 | 0 | 0 |
+| Frutta max % | 40 | 60 | 60 | 60 | 40 | 100 | 100 |
+| Alcolici min % | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
+| Alcolici max % | 2 | 2 | 2 | 2 | 2 | 100 | 100 |
+| Overrun min % | 33 | 33 | 0 | 33 | 33 | 0 | 0 |
+| Overrun max % | 35 | 35 | 15 | 35 | 35 | 100 | 100 |
+| Alimenti Tritati min % | 5 | 5 | 0 | 5 | 5 | 0 | 0 |
+| Alimenti Tritati max % | 10 | 10 | 0 | 10 | 10 | 100 | 100 |
+
+A "Ripristina valori predefiniti" (Reset to defaults) button per profile column. Changes are saved to localStorage automatically.
+
+---
+
+## TAB 3 — BILANCIAMENTO (Recipe Balancer — the main tab)
+
+This is the core of the app. It shows the recipe builder and balance results.
+
+### Top bar
+
+- **Recipe name** — editable text field
+- **Profile type selector** — dropdown: Gelato / Sorbetto / Granita / Gelato Vegan / Gelato Gastronomico / Personalizzato 1 / Personalizzato 2
+- **[Nuovo]** button — clear recipe
+- **[Salva]** / **[Stampa]** buttons
+
+### Ingredient groups
+
+Ingredients are organized into 7 collapsible groups (accordion). Each group has a header row showing group subtotals.
+
+Groups in order:
+1. **Latticini & Uova** (Dairy & Eggs)
+2. **Neutri & Basi** (Neutrals & Bases)
+3. **Zuccheri** (Sugars)
+4. **Ingredienti principali** (Main flavoring ingredients)
+5. **Frutta & Verdura** (Fruit & Vegetables)
+6. **Alcolici** (Alcoholic ingredients)
+7. **Alimenti Tritati** (Chopped mix-ins: nuts, chocolate chips, cookie pieces, etc.)
+
+### Ingredient table columns
+
+Each ingredient row shows these columns:
+
+| Column | Description |
+|--------|-------------|
+| Nome | Ingredient name |
+| Peso effettivo (g) | Editable weight input in grams |
+| % sul totale | % of total mix weight (calculated) |
+| % min | Minimum % allowed for this ingredient (from ingredient DB) |
+| % max | Maximum % allowed for this ingredient (from ingredient DB) |
+| % Zuccheri | Sugar contribution to mix (calculated) |
+| % Grassi | Fat contribution to mix (calculated) |
+| % SLNG | Milk solids non-fat contribution (calculated) |
+| Altri Solidi | Other solids contribution (calculated) |
+| POD | Sweetening power contribution (calculated) |
+| PAC | Antifreeze power contribution (calculated) |
+| [×] | Remove ingredient button |
+
+Below the table: an **[+ Aggiungi ingrediente]** button that opens a search dropdown to add an ingredient from the database to the active group.
+
+### TOTALI row
+
+A pinned totals row at the bottom of the table shows:
+- Total weight (g)
+- Sum of % Zuccheri, % Grassi, % SLNG, Altri Solidi
+- Total POD and PAC
+- Total Solidi Totali = Zuccheri + Grassi + SLNG + Altri Solidi
+
+### DATI GELATO panel
+
+A panel (right side on desktop, below table on mobile) showing 4 calculated fields:
+
+| Field | Calculation |
+|-------|-------------|
+| **Peso Miscela** | Total weight of the mix in grams |
+| **Peso Gelato** | Mix weight × (1 + Overrun/100). This is the final gelato weight at the same volume after overrun is applied. |
+| **Calorie** | Kcal per 100g of finished gelato: ((fat_g×9 + total_sugars_g×4 + proteins_g×4 + other_carbs_g×4) / totalWeight) × 100 / (1 + overrun/100) |
+| **Temperatura di Servizio** | Serving temperature calculated from PAC: T = −3.7 × (PAC_total / 100) °C. Round to one decimal. |
+
+Also in this panel: an **Overrun %** input (default: 35 for gelato, 0 for granita) that feeds into Peso Gelato and Calorie.
+
+### Balance status panel
+
+For each of the 11 parameters (Zuccheri, Grassi, SLNG, Altri Solidi, Solidi Totali, POD, PAC, Frutta, Alcolici, Overrun, Alimenti Tritati), show:
+- Parameter name
+- Current value
+- Min/max range (from active profile)
+- Colored status indicator:
+  - **Green** (✓): within range
+  - **Yellow** (⚠): slightly outside (within 15% of boundary)
+  - **Red** (✗): outside range
+- A horizontal bar showing the value positioned within the min–max range
+
+Summary line: "Ricetta bilanciata ✓" or "N parametri fuori range"
+
+---
+
+## TAB 4 — GELATI SALVATI (Saved Recipes)
+
+A grid of saved recipe slots organized by profile type. Each slot can be empty (shows "—") or contain a saved recipe.
+
+### Preset slot structure
+
+**GELATO slots:**
+- Base bianca
+- Base gialla
+- Base cioccolato
+- Gelato alla frutta
+- Paste di frutta secca
+- Base yogurt
+- Base alcolica bianca
+- Base alcolica gialla
+- Mio Gelato 2
+- Mio Gelato 3
+- … up to Mio Gelato 15
+
+**SORBETTO slots:**
+- Sorbetto Limone
+- Sorbetto Agrumi
+- Sorbetto Agrumi Misti
+- Sorbetto Frutta
+- Sorbetto Frutti Rossi
+- Sorbetto Erbe Aromatiche
+- Sorbetto Verdura
+- Mio Sorbetto 1
+- … up to Mio Sorbetto 11
+
+**GRANITA slots:**
+- Granita al Limone
+- Granita alla Fragola
+- Mia Granita 1
+- … up to Mia Granita 21
+
+**GELATO VEGAN slots:**
+- Mio Gelato Vegan 1 … up to 10
+
+**GELATO GASTRONOMICO slots:**
+- Mio Gelato Gastronomico 1 … up to 10
+
+**PERSONALIZZATO 1 & 2 slots:**
+- Mia Ricetta 1 … up to 10 each
+
+### Slot card UI
+
+Each slot card shows:
+- Slot name
+- If empty: grayed out, "Vuoto" label, [Salva qui] button
+- If filled: recipe name, date saved, key balance values (Zuccheri%, Grassi%, PAC), [Carica] [Elimina] buttons
+- Clicking [Carica] loads the recipe into the Bilanciamento tab
+
+All saved data stored in localStorage.
+
+---
+
+## TAB 5 — CALCOLATORI (Calculators)
+
+Three independent calculators for deriving PAC and other constants. These are tools for advanced users who want to add custom ingredients.
+
+### Calculator 1 — PAC da Peso Molecolare (PAC from Molecular Weight)
+
+**Purpose:** Calculate the PAC constant for any pure sugar molecule.
+
+**Formula (Angelo Corvitto):**
+```
+PAC = 34,200 / molecular_weight
+```
+
+**Examples:**
+- Sucrose: MW = 342 → PAC = 34,200 / 342 = **100**
+- Dextrose: MW = 180 → PAC = 34,200 / 180 = **190**
+- Fructose: MW = 122 → PAC = 34,200 / 122 ≈ **280**
+
+**UI:** Single input for molecular weight (g/mol), displays calculated PAC. A reference table of common sugars and their molecular weights is shown below.
+
+### Calculator 2 — PAC per Paste Grasse (PAC for Fatty Pastes)
+
+**Purpose:** Calculate the net PAC contribution of pastes that contain both fat and sugar (e.g., pistachio paste, hazelnut paste, almond paste).
+
+**Formula:**
+```
+PAC_pasta = (zuccheri_pct / 100) × PAC_zucchero − (grassi_vegetali_pct / 100) × K_grass
+```
+Where K_grass is a calibration constant for fat's antifreeze effect (approximately 0.43).
+
+Fat in a paste reduces the effective PAC because fat doesn't contribute to freezing point depression.
+
+**Example — Pasta di Pistacchio (49% fat, 6% sugar as sucrose):**
+- Sugar contribution: (6/100) × 100 = 6.0
+- Fat correction: (49/100) × 43 ≈ 21.07 (negative effect)
+- Net PAC ≈ 6.0 − 21.07 = **−15.07** (the paste has a net negative PAC per 100g of paste)
+- Display as negative value, meaning adding this paste slightly raises the freezing point
+
+**UI:** Inputs for % grassi vegetali and % zuccheri (with sugar type selector), displays net PAC per 100g of paste.
+
+### Calculator 3 — PAC per Coperture e Cioccolato (PAC for Chocolate and Coatings)
+
+**Purpose:** Calculate the net PAC of chocolate products combining cocoa butter, dry cocoa, and sugar.
+
+**Formula:**
+```
+PAC_cioccolato = (zucchero_pct / 100) × PAC_saccarosio
+               + (cacao_secco_pct / 100) × PAC_cacao_secco
+               − (burro_di_cacao_pct / 100) × K_grass
+```
+Where PAC_cacao_secco ≈ 0 (cocoa solids don't dissolve) and K_grass ≈ 43.
+
+**Example — Dark chocolate 54% cocoa butter, 45% dry cocoa, 1% sugar:**
+- PAC ≈ (1/100)×100 + 0 − (54/100)×43 ≈ 1 − 23.22 = **−22.22** per 100g (approx −128% as shown in reference)
+- (Note: the reference shows PAC = −128.60% for a specific chocolate formulation — use this as validation)
+
+**UI:** Inputs for % burro di cacao, % cacao secco, % zucchero. Displays net PAC per 100g of product.
+
+---
+
+## TAB 6 — INGREDIENTI (Ingredient Database)
+
+Displays and manages the full ingredient database. Four sub-sections:
+
+### Sub-tabs within Ingredienti:
+1. **Alimenti** — general foods (fruits, flavor pastes, chocolate, stabilizers, etc.)
+2. **Latticini & Uova** — dairy and eggs
+3. **Zuccheri** — sugars (with POD and PAC columns)
+4. **Neutri & Basi** — stabilizer bases and neutral mixes
+
+### Table columns (general ingredients):
+| Column | Description |
+|--------|-------------|
+| Nome | Italian name |
+| Acqua % | Water content per 100g |
+| Grassi % | Fat per 100g |
+| SLNG % | Milk solids non-fat per 100g |
+| Altri Solidi % | Other solids (auto: 100 − Acqua − Grassi − SLNG − Zuccheri_tot) |
+| Zuccheri dettaglio | Sugar breakdown (sucrose, dextrose, etc.) per 100g |
+| % min | Minimum % in mix (per-ingredient constraint) |
+| % max | Maximum % in mix (per-ingredient constraint) |
+
+### Table columns (Zuccheri sub-tab, additional columns):
+| Column | Description |
+|--------|-------------|
+| POD | Sweetening power constant |
+| PAC | Antifreeze power constant |
+| % min | Min % in total mix |
+| % max | Max % in total mix |
+
+### Built-in ingredient database
+
+#### LATTICINI & UOVA
+
+| Nome | Acqua% | Grassi% | SLNG% | Zuccheri | Altri Solidi | min% | max% |
+|------|--------|---------|-------|----------|--------------|------|------|
+| Latte intero | 87.2 | 3.5 | 8.7 | lattosio:4.8 | 0.6 | — | — |
+| Latte parz. scremato | 89.0 | 1.6 | 8.9 | lattosio:4.8 | 0.5 | — | — |
+| Latte scremato | 90.5 | 0.1 | 9.0 | lattosio:4.9 | 0.5 | — | — |
+| Panna 35% | 59.5 | 35.0 | 5.0 | lattosio:2.9 | 0.6 | — | — |
+| Panna 38% | 57.0 | 38.0 | 5.0 | lattosio:2.7 | 0.3 | — | — |
+| Burro | 15.8 | 82.0 | 1.2 | {} | 1.0 | — | — |
+| Latte in polvere scremato (LPS) | 3.5 | 0.8 | 95.0 | lattosio:50.5 | 0.7 | — | — |
+| Latte in polvere intero (LPI) | 3.0 | 26.0 | 70.0 | lattosio:36.5 | 1.0 | — | — |
+| Tuorlo d'uovo fresco | 51.0 | 31.0 | 0.0 | {} | 18.0 | — | — |
+| Albume d'uovo fresco | 88.0 | 0.0 | 0.0 | {} | 12.0 | — | — |
+| Ricotta intera | 71.0 | 12.0 | 8.0 | lattosio:3.0 | 6.0 | — | — |
+| Mascarpone | 44.0 | 44.0 | 5.5 | lattosio:2.5 | 4.0 | — | — |
+| Yogurt intero | 85.0 | 3.5 | 7.5 | lattosio:4.0 | 0.0 | — | — |
+| Formaggio fresco spalmabile | 54.0 | 34.0 | 6.5 | lattosio:2.7 | 2.8 | — | — |
+| Latte condensato zuccherato | 26.0 | 8.5 | 17.0 | saccarosio:44.0 | 4.5 | — | — |
+| Panna in polvere | 3.0 | 42.0 | 46.0 | lattosio:25.0 | 9.0 | — | — |
+
+#### ZUCCHERI (with POD and PAC constants)
+
+| Nome | Acqua% | Zuccheri per 100g | POD | PAC | min% | max% |
+|------|--------|-------------------|-----|-----|------|------|
+| Saccarosio | 0 | saccarosio:100 | 100 | 100 | 8 | 15 |
+| Destrosio (Glucosio) | 0 | destrosio:100 | 75 | 190 | — | — |
+| Fruttosio | 0 | fruttosio:100 | 140 | 280 | — | — |
+| Zucchero Invertito | 23 | invertito:75 | 125 | 190 | — | — |
+| Miele | 17 | miele:80 | 130 | 190 | — | — |
+| Trealosio | 0 | trealosio:100 | 45 | 100 | — | — |
+| Isofruttosio | 0 | isofruttosio:100 | 100 | 190 | — | — |
+| Maltitolo | 0 | maltitolo:100 | 90 | 100 | — | — |
+| Sorbitolo | 0 | sorbitolo:100 | 60 | 190 | — | — |
+| Mannitolo | 0 | mannitolo:100 | 64 | 188 | — | — |
+| Xilitolo | 0 | xilitolo:100 | 100 | 225 | — | — |
+| Eritritolo | 0 | eritritolo:100 | 65 | 0 | — | — |
+| Tagatosio | 0 | tagatosio:100 | 90 | 190 | — | — |
+| Stevia (estratto) | 0 | stevia:100 | 30000 | 0 | — | — |
+| Glicrizina | 0 | glicrizina:100 | 5000 | 42 | — | — |
+| Glucosio Atomizzato 21 DE | 0 | glucosioAt:100 | 20 | 23 | — | — |
+| Glucosio Atomizzato 39 DE | 0 | glucosioAt:100 | 23 | 45 | — | — |
+| Glucosio Atomizzato 42 DE | 0 | glucosioAt:100 | 18 | 37 | — | — |
+| Glucosio Atomizzato 52 DE | 0 | glucosioAt:100 | 20 | 87 | — | — |
+| Maltodestrina 5 DE | 0 | maltodestrina:100 | 5 | 9 | — | — |
+| Maltodestrina 18 DE | 0 | maltodestrina:100 | 13 | 32 | — | — |
+| Maltodestrina 20 DE | 0 | maltodestrina:100 | 18 | 37 | — | — |
+| Lattosio | 0 | lattosio:100 | 16 | 100 | — | — |
+
+#### NEUTRI & BASI
+
+| Nome | Acqua% | Grassi% | SLNG% | Altri Solidi% | min% | max% |
+|------|--------|---------|-------|---------------|------|------|
+| Neutro per gelato | 0 | 0 | 0 | 100 | 0.2 | 0.5 |
+| Neutro per sorbetto | 0 | 0 | 0 | 100 | 0.2 | 0.5 |
+| Neutro per gelato vegan | 0 | 0 | 0 | 100 | 0.2 | 0.5 |
+| Farina di semi di carrube | 0 | 0 | 0 | 100 | 0.1 | 0.3 |
+| Guar | 0 | 0 | 0 | 100 | 0.05 | 0.2 |
+| Inulina | 0 | 0 | 0 | 100 | 0.5 | 3.0 |
+| Carragenina | 0 | 0 | 0 | 100 | 0.02 | 0.1 |
+| Agar agar | 0 | 0 | 0 | 100 | 0.05 | 0.3 |
+| Pectina | 0 | 0 | 0 | 100 | 0.1 | 0.5 |
+
+#### ALIMENTI (Flavoring / Main Ingredients)
+
+| Nome | Acqua% | Grassi% | SLNG% | Zuccheri | Altri Solidi% | min% | max% |
+|------|--------|---------|-------|----------|---------------|------|------|
+| Cioccolato fondente 70% | 1.0 | 42.0 | 0.0 | saccarosio:28.0 | 28.0 | — | — |
+| Cioccolato fondente 56% | 1.0 | 33.0 | 0.0 | saccarosio:40.0 | 25.0 | — | — |
+| Cioccolato al latte | 1.5 | 31.0 | 6.5 | saccarosio:45.0 | 16.0 | — | — |
+| Cacao in polvere 22-24% | 3.0 | 22.0 | 0.0 | {} | 74.0 | — | — |
+| Pasta di pistacchio | 4.0 | 49.0 | 0.0 | saccarosio:6.0 | 41.0 | — | — |
+| Pasta di nocciola | 2.0 | 62.0 | 0.0 | saccarosio:4.0 | 31.0 | — | — |
+| Pasta di mandorla | 4.0 | 52.0 | 0.0 | saccarosio:5.0 | 38.0 | — | — |
+| Pasta di caffè | 3.0 | 15.0 | 0.0 | {} | 82.0 | — | — |
+| Estratto di vaniglia | 50.0 | 0.0 | 0.0 | {} | 50.0 | — | — |
+| Torrone granulato | 3.0 | 20.0 | 3.0 | saccarosio:45.0 | 29.0 | — | — |
+| Lemon curd | 28.0 | 10.0 | 2.0 | saccarosio:50.0 | 10.0 | — | — |
+| Crema di marroni | 20.0 | 2.0 | 0.0 | saccarosio:52.0 | 26.0 | — | — |
+
+#### FRUTTA & VERDURA (for sorbets and gelato)
+
+| Nome | Acqua% | Grassi% | SLNG% | Zuccheri | Altri Solidi% |
+|------|--------|---------|-------|----------|---------------|
+| Fragola fresca/purea | 90.0 | 0.0 | 0.0 | fruttosio:3.5, saccarosio:2.0 | 4.5 |
+| Limone succo | 91.0 | 0.0 | 0.0 | fruttosio:1.0, saccarosio:0.5 | 7.5 |
+| Mango purea | 83.0 | 0.0 | 0.0 | fruttosio:6.0, saccarosio:6.5 | 4.5 |
+| Lampone purea | 87.0 | 0.0 | 0.0 | fruttosio:4.5, saccarosio:2.0 | 6.5 |
+| Frutto della passione purea | 85.0 | 0.0 | 0.0 | fruttosio:6.0, saccarosio:3.5 | 5.5 |
+| Banana | 75.0 | 0.3 | 0.0 | fruttosio:4.9, saccarosio:6.5 | 13.3 |
+| Pera purea | 84.0 | 0.0 | 0.0 | fruttosio:6.0, saccarosio:1.0 | 9.0 |
+| Pesca purea | 86.0 | 0.0 | 0.0 | fruttosio:2.0, saccarosio:4.8 | 7.2 |
+| Arancia succo | 88.0 | 0.0 | 0.0 | fruttosio:2.5, saccarosio:4.2 | 5.3 |
+| Ananas purea | 86.0 | 0.0 | 0.0 | fruttosio:2.5, saccarosio:4.0 | 7.5 |
+| Cocco purea | 58.0 | 22.0 | 0.0 | saccarosio:4.5 | 15.5 |
+| Fico purea | 79.0 | 0.0 | 0.0 | fruttosio:10.0, saccarosio:2.0 | 9.0 |
+| Melone purea | 90.0 | 0.0 | 0.0 | fruttosio:3.0, saccarosio:3.5 | 3.5 |
+| Albicocca purea | 86.0 | 0.0 | 0.0 | fruttosio:2.4, saccarosio:4.0 | 7.6 |
+| Mora purea | 88.0 | 0.0 | 0.0 | fruttosio:3.5, saccarosio:0.5 | 8.0 |
+| Ribes nero purea | 80.0 | 0.0 | 0.0 | fruttosio:4.0, saccarosio:3.0 | 13.0 |
+| Mirtillo purea | 86.0 | 0.0 | 0.0 | fruttosio:4.3, saccarosio:2.7 | 7.0 |
+| Kiwi purea | 84.0 | 0.5 | 0.0 | fruttosio:4.5, saccarosio:4.0 | 7.0 |
+| Melograno succo | 85.0 | 0.0 | 0.0 | fruttosio:4.7, saccarosio:5.0 | 5.3 |
+
+Users can add, edit, and delete custom ingredients in this tab. The built-in ingredients are read-only (show a lock icon, no edit/delete).
+
+---
+
+## DOMAIN KNOWLEDGE — CALCULATIONS
+
+### What the software calculates
+
+Every gelato recipe is a mix of ingredients. Each ingredient contributes to these pools:
+1. **Acqua (Water)** — determines texture and iciness. Calculated as 100% − all solids.
+2. **Grassi (Fat)** — determines creaminess
+3. **SLNG** (Solidi del Latte Non Grassi = MSNF) — milk proteins + lactose, affects structure
+4. **Zuccheri (Sugars)** — total sugar content by type
+5. **Altri Solidi** — fibers, stabilizers, cocoa solids, fruit solids, etc.
+6. **Solidi Totali** = Grassi + SLNG + Zuccheri + Altri Solidi
+
+### Core pool calculations
+
+```typescript
+// For each ingredient in the recipe:
+const totalWeight = sum(ingredients.map(i => i.weightG))
+
+const totalWaterG   = sum(ingredients.map(i => i.weightG * i.acquaPct / 100))
+const totalGrassiG  = sum(ingredients.map(i => i.weightG * i.grassiPct / 100))
+const totalSLNGG    = sum(ingredients.map(i => i.weightG * i.slngPct / 100))
+const totalZuccheriG = sum(ingredients.map(i =>
+  i.weightG * sum(Object.values(i.zuccheri)) / 100
+))
+const totalAltriSolidiG = totalWeight - totalWaterG - totalGrassiG - totalSLNGG - totalZuccheriG
+const totalSolidiTotali = totalGrassiG + totalSLNGG + totalZuccheriG + totalAltriSolidiG
+
+// Express as % of total weight:
+const waterPct        = totalWaterG / totalWeight * 100
+const grassiPct       = totalGrassiG / totalWeight * 100
+const slngPct         = totalSLNGG / totalWeight * 100
+const zuccheriPct     = totalZuccheriG / totalWeight * 100
+const altriSolidiPct  = totalAltriSolidiG / totalWeight * 100
+const solidiTotaliPct = totalSolidiTotali / totalWeight * 100
+```
+
+### POD calculation (Potere Dolcificante — Sweetening Power)
+
+POD measures how sweet the recipe is relative to sucrose (sucrose = 100).
+
+```typescript
+// For each ingredient, for each sugar type in that ingredient:
+let totalPOD_g = 0
+for (const ingredient of ingredients) {
+  for (const [sugarType, sugarPct] of Object.entries(ingredient.zuccheri)) {
+    const sugarWeightG = ingredient.weightG * sugarPct / 100
+    totalPOD_g += sugarWeightG * SUGAR_CONSTANTS[sugarType].POD / 100
+  }
+}
+// Express as % of total mix weight:
+const podPct = totalPOD_g / totalWeight * 100
+```
+
+### PAC calculation (Potere Anti-Congelante — Antifreeze Power)
+
+PAC measures how much the sugars depress the freezing point. Higher PAC = softer gelato at serving temperature.
+
+```typescript
+// Same pattern as POD but using PAC constants:
+let totalPAC_g = 0
+for (const ingredient of ingredients) {
+  for (const [sugarType, sugarPct] of Object.entries(ingredient.zuccheri)) {
+    const sugarWeightG = ingredient.weightG * sugarPct / 100
+    totalPAC_g += sugarWeightG * SUGAR_CONSTANTS[sugarType].PAC / 100
+  }
+}
+const pacValue = totalPAC_g / totalWeight * 100
+// PAC is reported as this value (not as a ratio to sucrose)
+```
+
+### Serving temperature calculation
+
+```typescript
+// Based on Angelo Corvitto's methodology:
+const temperaturaServizio = -3.7 * (pacValue / 100)
+// pacValue is already expressed as % of mix weight
+// Example: PAC = 28.5% → T = -3.7 × 0.285 = -1.05°C
+// Typical range: -9°C to -14°C for gelato
+```
+
+### Calorie calculation
+
+```typescript
+const fatKcal      = (totalGrassiG / totalWeight * 100) * 9
+const sugarKcal    = (totalZuccheriG / totalWeight * 100) * 4
+const proteinKcal  = (totalSLNGG / totalWeight * 100) * 0.35 * 4  // ~35% of SLNG is protein
+const kcalPer100gMix = fatKcal + sugarKcal + proteinKcal
+// Adjust for overrun (gelato is lighter than mix per 100g):
+const kcalPer100gGelato = kcalPer100gMix / (1 + overrunPct / 100)
+```
+
+### Sugar constants table (use exactly these values)
+
+```typescript
+export const SUGAR_CONSTANTS: Record<string, { POD: number; PAC: number }> = {
+  saccarosio:         { POD: 100,   PAC: 100 },
+  destrosio:          { POD: 75,    PAC: 190 },
+  fruttosio:          { POD: 140,   PAC: 280 },
+  invertito:          { POD: 125,   PAC: 190 },
+  lattosio:           { POD: 16,    PAC: 100 },
+  miele:              { POD: 130,   PAC: 190 },
+  trealosio:          { POD: 45,    PAC: 100 },
+  isofruttosio:       { POD: 100,   PAC: 190 },
+  maltitolo:          { POD: 90,    PAC: 100 },
+  sorbitolo:          { POD: 60,    PAC: 190 },
+  mannitolo:          { POD: 64,    PAC: 188 },
+  xilitolo:           { POD: 100,   PAC: 225 },
+  eritritolo:         { POD: 65,    PAC: 0   },
+  tagatosio:          { POD: 90,    PAC: 190 },
+  stevia:             { POD: 30000, PAC: 0   },
+  glicrizina:         { POD: 5000,  PAC: 42  },
+  glucosioAt21DE:     { POD: 20,    PAC: 23  },
+  glucosioAt39DE:     { POD: 23,    PAC: 45  },
+  glucosioAt42DE:     { POD: 18,    PAC: 37  },
+  glucosioAt52DE:     { POD: 20,    PAC: 87  },
+  maltodestrina5DE:   { POD: 5,     PAC: 9   },
+  maltodestrina18DE:  { POD: 13,    PAC: 32  },
+  maltodestrina20DE:  { POD: 18,    PAC: 37  },
+}
+```
+
+---
+
+## PAGES & ROUTES
+
+```
+/balancer                  → redirect to /balancer/new
+/balancer/new              → new blank recipe (opens on Bilanciamento tab)
+/balancer/[recipeId]       → load a saved recipe
+```
+
+The 6 tabs are within the same page — no separate routes per tab. Tab state is in the URL hash (e.g. `#bilanciamento`).
+
+---
+
+## DESIGN SYSTEM
+
+Use EXACTLY the same design tokens as the main gelato education platform. This software will be merged into that site.
+
+### CSS custom properties (put in globals.css)
+
+```css
+:root {
+  --color-base:          #F5F0E8;
+  --color-surface:       #EDE8DF;
+  --color-surface-deep:  #E4DDD1;
+  --color-border:        #D9D3C8;
+  --color-accent:        #C4622D;
+  --color-accent-dark:   #A8501F;
+  --color-text:          #1A1A1A;
+  --color-text-muted:    #6B6560;
+  --color-success:       #2D7A3A;
+  --color-success-bg:    #EEF7EF;
+  --color-warning:       #A87820;
+  --color-warning-bg:    #FEF5E4;
+  --color-error:         #C4362D;
+  --color-error-bg:      #FEF0EE;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-full: 9999px;
+
+  --space-2xs: 2px;
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+}
+```
+
+### Typography rules
+
+- App name / page title: Cormorant Garamond italic — "Gelato Balancer"
+- All body text, input labels, table data, numbers: Inter
+- Parameter labels (Zuccheri, Grassi, etc.) in the balance panel: Inter 12px, 600 weight, uppercase, letter-spacing 0.08em
+- Large values (21.4%): Inter 20px, 500 weight
+- Never use Cormorant Garamond for data or numbers — Inter only for anything quantitative
+- Never hard-code hex values — always use var(--color-*)
+
+### Fonts — load from Google Fonts
+
+```html
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+```
+
+### Status colors for balance indicators
+
+```css
+.status-ok      { color: var(--color-success);  background: var(--color-success-bg); }
+.status-warning { color: var(--color-warning);  background: var(--color-warning-bg); }
+.status-error   { color: var(--color-error);    background: var(--color-error-bg);   }
+```
+
+### App header
+
+```
+EN: Gelato Balancer     [New] [Save] [Load] [Print]     [EN | IT]
+IT: Gelato Balancer     [Nuovo] [Salva] [Carica] [Stampa]  [EN | IT]
+```
+
+- Logo/title: Cormorant Garamond italic, "Gelato Balancer" (same in both languages — it's a proper name)
+- A terracotta dot before the title marks this as a Pro tool
+- Language toggle [EN | IT] in the top-right corner — same behavior as the main website: switches routes `/en/balancer` ↔ `/it/balancer`, persists in localStorage, defaults to browser language
+- Sticky header, 56px height
+- Tab bar directly below the header
+
+### Tab bar styling
+
+- Active tab: border-bottom terracotta 2px, text color var(--color-text), font-weight 600
+- Inactive tab: text color var(--color-text-muted), no border
+- Tab bar background: var(--color-surface)
+- No pill/rounded tab style — clean underline only (editorial, not SaaS)
+
+---
+
+## DATA STRUCTURES (TypeScript types)
+
+```typescript
+// Sugar types as a union
+type SugarType =
+  | 'saccarosio' | 'destrosio' | 'fruttosio' | 'invertito' | 'lattosio'
+  | 'miele' | 'trealosio' | 'isofruttosio' | 'maltitolo' | 'sorbitolo'
+  | 'mannitolo' | 'xilitolo' | 'eritritolo' | 'tagatosio' | 'stevia'
+  | 'glicrizina' | 'glucosioAt21DE' | 'glucosioAt39DE' | 'glucosioAt42DE'
+  | 'glucosioAt52DE' | 'maltodestrina5DE' | 'maltodestrina18DE' | 'maltodestrina20DE'
+
+// Profile types
+type ProfileType =
+  | 'gelato' | 'sorbetto' | 'granita' | 'vegan' | 'gastronomico'
+  | 'personalizzato1' | 'personalizzato2'
+
+// Ingredient group
+type IngredientGroup =
+  | 'latticiniUova' | 'neutriBasi' | 'zuccheri' | 'ingredientiPrincipali'
+  | 'fruttaVerdura' | 'alcolici' | 'alimentiTritati'
+
+// An ingredient in the database
+interface IngredientDefinition {
+  id: string
+  nome: string            // Italian name
+  nomeit?: string         // alternate Italian name
+  group: IngredientGroup
+  acquaPct: number        // grams per 100g
+  grassiPct: number       // grams per 100g
+  slngPct: number         // grams per 100g
+  zuccheri: Partial<Record<SugarType, number>>  // grams per 100g for each sugar type
+  altriSolidiPct: number  // auto-calculated: 100 - acqua - grassi - slng - sum(zuccheri)
+  minPct?: number         // min % in total mix (ingredient-level constraint)
+  maxPct?: number         // max % in total mix (ingredient-level constraint)
+  isCustom?: boolean
+  isReadOnly?: boolean    // built-in ingredients are read-only
+}
+
+// A line item in the recipe (ingredient + quantity)
+interface RecipeLine {
+  id: string
+  ingredientId: string
+  ingredient: IngredientDefinition
+  weightG: number         // grams in this recipe
+}
+
+// Target ranges for one parameter in one profile
+interface ParameterRange {
+  min: number
+  max: number
+}
+
+// Target ranges for a complete profile
+interface ProfileRanges {
+  zuccheri: ParameterRange
+  grassi: ParameterRange
+  slng: ParameterRange
+  altriSolidi: ParameterRange
+  solidiTotali: ParameterRange
+  pod: ParameterRange
+  pac: ParameterRange
+  frutta: ParameterRange
+  alcolici: ParameterRange
+  overrun: ParameterRange
+  alimentiTritati: ParameterRange
+}
+
+// A complete recipe
+interface Recipe {
+  id: string
+  nome: string
+  profile: ProfileType
+  lines: RecipeLine[]
+  overrunPct: number      // default: 35 for gelato/sorbetto/vegan/gastronomico, 0 for granita
+  slotName?: string       // e.g. "Base bianca", "Mio Gelato 3"
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Calculated balance for the whole recipe
+type BalanceStatus = 'low' | 'ok' | 'high'
+
+interface RecipeBalance {
+  totalWeightG: number
+  acquaG: number;         acquaPct: number
+  grassiG: number;        grassiPct: number;       grassiStatus: BalanceStatus
+  slngG: number;          slngPct: number;         slngStatus: BalanceStatus
+  zuccheriG: number;      zuccheriPct: number;     zuccheriStatus: BalanceStatus
+  altriSolidiG: number;   altriSolidiPct: number;  altriSolidiStatus: BalanceStatus
+  solidiTotaliG: number;  solidiTotaliPct: number; solidiTotaliStatus: BalanceStatus
+  podValue: number;       podStatus: BalanceStatus
+  pacValue: number;       pacStatus: BalanceStatus
+  fruttaPct: number;      fruttaStatus: BalanceStatus
+  alcoliciPct: number;    alcoliciStatus: BalanceStatus
+  alimentiTritatiPct: number; alimentiTritatiStatus: BalanceStatus
+  // DATI GELATO
+  pesoMiscelaG: number    // = totalWeightG
+  pesoGelatoG: number     // = totalWeightG × (1 + overrunPct/100)
+  kcalPer100gGelato: number
+  temperaturaServizio: number  // °C
+  overallStatus: 'bilanciata' | 'quasi-bilanciata' | 'da-correggere'
+}
+```
+
+---
+
+## ZUSTAND STORE STRUCTURE
+
+```typescript
+interface BalancerStore {
+  // Ingredient database
+  ingredients: IngredientDefinition[]
+  addCustomIngredient: (ing: Omit<IngredientDefinition, 'id' | 'isCustom' | 'isReadOnly'>) => void
+  updateCustomIngredient: (id: string, updates: Partial<IngredientDefinition>) => void
+  deleteCustomIngredient: (id: string) => void
+
+  // Profile configuration (user-editable ranges)
+  profileRanges: Record<ProfileType, ProfileRanges>
+  updateProfileRange: (profile: ProfileType, param: keyof ProfileRanges, range: ParameterRange) => void
+  resetProfileRanges: (profile: ProfileType) => void
+
+  // Current recipe
+  recipe: Recipe
+  activeGroup: IngredientGroup | null
+  setActiveGroup: (group: IngredientGroup | null) => void
+  addLine: (ingredientId: string, group: IngredientGroup) => void
+  updateWeight: (lineId: string, weightG: number) => void
+  removeLine: (lineId: string) => void
+  setRecipeName: (name: string) => void
+  setProfile: (profile: ProfileType) => void
+  setOverrun: (pct: number) => void
+  clearRecipe: () => void
+
+  // Derived (recomputed whenever recipe changes)
+  balance: RecipeBalance
+
+  // Active tab
+  activeTab: 'istruzioni' | 'configurazione' | 'bilanciamento' | 'gelatiSalvati' | 'calcolatori' | 'ingredienti'
+  setActiveTab: (tab: BalancerStore['activeTab']) => void
+
+  // Saved recipes (by slot)
+  savedSlots: Record<string, Recipe>  // key = slotName
+  saveToSlot: (slotName: string) => void
+  loadFromSlot: (slotName: string) => void
+  deleteSlot: (slotName: string) => void
+}
+```
+
+---
+
+## FILE STRUCTURE
+
+```
+app/
+  balancer/
+    page.tsx              → redirect to /balancer/new
+    new/
+      page.tsx            → BalancerApp with blank recipe
+    [recipeId]/
+      page.tsx            → BalancerApp with loaded recipe
+
+components/
+  balancer/
+    BalancerApp.tsx       → tab bar orchestrator + header
+    tabs/
+      IstruzioniTab.tsx   → static help content
+      ConfigurazioneTab.tsx → editable profile ranges table
+      BilanciamentoTab.tsx  → recipe builder + balance results
+      GelatiSalvatiTab.tsx  → saved recipe grid by type
+      CalcolatoriTab.tsx    → 3 PAC calculators
+      IngredientiTab.tsx    → ingredient database management
+    bilanciamento/
+      IngredientGroupTable.tsx  → accordion group + ingredient rows
+      IngredientRow.tsx         → single ingredient row with all columns
+      TotaliRow.tsx             → pinned totals row
+      DatiGelatoPanel.tsx       → Peso Miscela, Peso Gelato, Calorie, T. Servizio
+      BalanceStatusPanel.tsx    → per-parameter status bars
+    gelatiSalvati/
+      RecipeSlotGrid.tsx    → grid of slots by profile type
+      RecipeSlotCard.tsx    → individual slot card
+    calcolatori/
+      PACFromMolWeight.tsx
+      PACForPasteGrasse.tsx
+      PACForCioccolato.tsx
+    ingredienti/
+      IngredientTable.tsx   → sortable/filterable table
+      IngredientForm.tsx    → add/edit custom ingredient modal
+  ui/
+    Button.tsx
+    Input.tsx
+    Badge.tsx
+    Modal.tsx
+    Tabs.tsx
+
+lib/
+  balancer/
+    calculations.ts         → all pure calculation functions (pools, POD, PAC, calories, T. servizio)
+    constants.ts            → SUGAR_CONSTANTS, DEFAULT_PROFILE_RANGES, SLOT_NAMES
+    defaultIngredients.ts   → full built-in ingredient database (Italian names)
+    storage.ts              → localStorage keys and read/write helpers
+
+store/
+  balancerStore.ts          → Zustand store (see above)
+```
+
+---
+
+## PERSISTENCE (localStorage)
+
+```typescript
+const KEYS = {
+  SAVED_SLOTS:         'gelato-balancer:saved-slots',
+  CUSTOM_INGREDIENTS:  'gelato-balancer:custom-ingredients',
+  PROFILE_RANGES:      'gelato-balancer:profile-ranges',
+  LAST_RECIPE:         'gelato-balancer:last-recipe',
+}
+
+// On app load:
+// 1. Load custom ingredients from localStorage, merge with built-in DB
+// 2. Load profile ranges (or use defaults if none saved)
+// 3. Load last-edited recipe from localStorage
+// 4. Load saved slots
+
+// Auto-save last recipe: whenever recipe changes (debounced 500ms)
+```
+
+---
+
+## PRINT STYLESHEET
+
+When the user clicks Stampa (Print):
+- Show: recipe name, profile type, date printed
+- Show: ingredient table (Nome, Peso g, % sul totale, % Zuccheri, % Grassi, % SLNG, POD, PAC)
+- Show: DATI GELATO panel (Peso Miscela, Peso Gelato, Calorie, Temperatura di Servizio)
+- Show: balance status summary (all 11 parameters with value and in/out-of-range status)
+- Hide: tab bar, header buttons, all interactive controls
+- Use `@media print` CSS
+
+---
+
+## RESPONSIVE BEHAVIOR
+
+- **Desktop (≥1024px):** Full 6-tab layout. Bilanciamento tab: ingredient table fills center/left, balance panel + DATI GELATO on the right.
+- **Tablet (768px–1023px):** Tabs remain. Bilanciamento: ingredient table full width, balance panel below.
+- **Mobile (<768px):** Tab bar collapses to scrollable horizontal tab row. Everything stacks vertically.
+- This is a **desktop-first professional tool**. Mobile layout is functional but not the primary target.
+
+---
+
+## PHASE 2 APPS (do not build yet — just know they exist)
+
+After the balancing software is done, two simplified apps will be added to the same project:
+
+**App 2 — Home Recipe App** (`/apps/home`)
+- For home cooks, no balancing jargon
+- A wizard: asks flavor, desired quantity, available equipment (no machine / basic machine / Pacojet)
+- Outputs: a simple recipe in grams with step-by-step instructions
+- Does not show POD/PAC/SLNG — outputs a clean recipe card
+
+**App 3 — Pro Recipe App** (`/apps/pro`)
+- For professional gelato makers who want a faster workflow
+- Guided: asks flavor, profile type, desired total weight
+- Outputs: full balanced recipe + breakdown table
+- Shorter than the full balancer but shows the professional parameters
+
+Both apps share the ingredient database from the balancer.
+
+---
+
+## IMPORTANT NOTES
+
+### i18n — EN + IT from day 1
+
+Both English and Italian must be fully implemented before shipping — not as TODOs. Use next-intl with the same setup as the main platform:
+
+- Translation files: `messages/en.json` and `messages/it.json`
+- Routes: `/en/balancer/new` and `/it/balancer/new` (same pattern as the main site)
+- Every string in the UI goes through `useTranslations()` — no hardcoded strings in components
+- Ingredient names in the database have both `nome` (Italian) and `nameEn` (English) fields — display based on locale
+- Parameter names switch language: EN uses "Sugars / Fat / MSNF / Other Solids / Total Solids / POD / PAC" — IT uses "Zuccheri / Grassi / SLNG / Altri Solidi / Solidi Totali / POD / PAC"
+- The language toggle [EN | IT] in the header switches the full route just like the main website
+
+### Design — must match the main website exactly
+
+The balancer will be merged into the main gelato education platform. A user who switches from the course player to the balancer must feel zero visual discontinuity. Rules:
+- Same CSS custom properties (see Design System section above) — no new color values
+- Same fonts: Cormorant Garamond italic for the app title only; Inter for everything else (all data, labels, numbers, table content)
+- Same border radius, spacing tokens, button styles, focus rings
+- Same dark mode implementation (`[data-theme="dark"]` on html, localStorage persistence, system preference default)
+- Same minimum touch target: 44×44px for all interactive elements
+- Same focus ring: `outline: 2px solid var(--color-accent); outline-offset: 2px`
+- No gradients, no purple/violet/indigo, no decorative blobs, no generic SaaS patterns
+- Status indicators use the same green/yellow/red semantic tokens already defined
+
+### Other notes
+
+- The built-in ingredient database is read-only. Users can only add/edit/delete their own custom ingredients.
+- All calculations are pure functions in `calculations.ts` — no side effects, easily testable.
+- When this merges into the main education platform: the /balancer routes drop into the existing Next.js app, design tokens are already identical, and the only wiring needed is Supabase Auth to replace localStorage for cloud saves.
