@@ -31,7 +31,14 @@ router.post('/auth/signup', async (req, res) => {
     req.session.userId = user.id
     req.session.userEmail = user.email
     req.session.userRole = user.role
-    res.json({ id: user.id, email: user.email, role: user.role })
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        req.log.error({ err: saveErr }, 'Session save error on signup')
+        res.status(500).json({ error: 'Internal server error' })
+        return
+      }
+      res.json({ id: user.id, email: user.email, role: user.role })
+    })
   } catch (err) {
     req.log.error({ err }, 'Signup error')
     res.status(500).json({ error: 'Internal server error' })
@@ -53,7 +60,14 @@ router.post('/auth/login', async (req, res) => {
     req.session.userId = user.id
     req.session.userEmail = user.email
     req.session.userRole = user.role
-    res.json({ id: user.id, email: user.email, role: user.role })
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        req.log.error({ err: saveErr }, 'Session save error on login')
+        res.status(500).json({ error: 'Internal server error' })
+        return
+      }
+      res.json({ id: user.id, email: user.email, role: user.role })
+    })
   } catch (err) {
     req.log.error({ err }, 'Login error')
     res.status(500).json({ error: 'Internal server error' })

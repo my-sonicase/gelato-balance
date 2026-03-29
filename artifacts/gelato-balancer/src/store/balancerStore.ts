@@ -54,11 +54,12 @@ function resolveLines(
   })
 }
 
-type ApiIngredient = Omit<IngredientDefinition, 'zuccheri' | 'grassiPct' | 'acquaPct' | 'slngPct' | 'altriSolidiPct'> & {
+interface ApiIngredient {
+  id: string; nome: string; nomeEN?: string; group: IngredientGroup
   acquaPct: string; grassiPct: string; slngPct: string; altriSolidiPct: string
   zuccheri: Record<string, number>
-  isCustom: boolean; isReadOnly?: boolean; isArchived?: boolean
   minPct?: string; maxPct?: string
+  isCustom: boolean; isReadOnly?: boolean; isArchived?: boolean
 }
 
 type ApiRecipe = {
@@ -70,7 +71,8 @@ type ApiRecipe = {
 
 function mapApiIngredient(ai: ApiIngredient): IngredientDefinition {
   return {
-    id: ai.id, nome: ai.nome, nomeEN: ai.nomeEN, groupName: ai.groupName,
+    id: ai.id, nome: ai.nome, nomeEN: ai.nomeEN,
+    group: ai.group,
     acquaPct: Number(ai.acquaPct), grassiPct: Number(ai.grassiPct),
     slngPct: Number(ai.slngPct), altriSolidiPct: Number(ai.altriSolidiPct),
     zuccheri: ai.zuccheri,
