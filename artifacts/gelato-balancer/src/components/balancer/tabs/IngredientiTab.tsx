@@ -3,6 +3,10 @@ import { useBalancerStore } from '../../../store/balancerStore'
 import { TRANSLATIONS, type Lang } from '../../../lib/balancer/i18n'
 import type { IngredientDefinition, IngredientGroup } from '../../../lib/balancer/types'
 
+function ingName(ing: IngredientDefinition, lang: Lang): string {
+  return lang === 'en' && ing.nomeEN ? ing.nomeEN : ing.nome
+}
+
 interface Props { lang: Lang }
 
 const GROUPS: IngredientGroup[] = [
@@ -129,7 +133,7 @@ export default function IngredientiTab({ lang }: Props) {
 
   const filtered = ingredients.filter(i =>
     (activeGroup === 'all' || i.group === activeGroup) &&
-    i.nome.toLowerCase().includes(query.toLowerCase())
+    ingName(i, lang).toLowerCase().includes(query.toLowerCase())
   )
 
   const thStyle: React.CSSProperties = {
@@ -189,7 +193,7 @@ export default function IngredientiTab({ lang }: Props) {
               return (
                 <tr key={ing.id} style={{ background: idx % 2 === 0 ? 'var(--color-base)' : 'var(--color-surface)' }}>
                   <td style={{ padding: '7px 12px', color: 'var(--color-text)', fontSize: 13 }}>
-                    {ing.nome}
+                    {ingName(ing, lang)}
                     {ing.isReadOnly && (
                       <span className="ml-1.5 text-xs rounded px-1 py-0.5" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>🔒</span>
                     )}

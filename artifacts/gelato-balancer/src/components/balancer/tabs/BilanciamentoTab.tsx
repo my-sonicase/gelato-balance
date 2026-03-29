@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { useBalancerStore } from '../../../store/balancerStore'
 import { TRANSLATIONS, type Lang } from '../../../lib/balancer/i18n'
-import type { IngredientGroup, ProfileType, BalanceStatus, RecipeLine } from '../../../lib/balancer/types'
+import type { IngredientDefinition, IngredientGroup, ProfileType, BalanceStatus, RecipeLine } from '../../../lib/balancer/types'
 import { SUGAR_CONSTANTS } from '../../../lib/balancer/constants'
 import { DEFAULT_RECIPE_TEMPLATES, buildRecipeFromTemplate, getTemplateName } from '../../../lib/balancer/defaultRecipeData'
 import { generateSuggestions } from '../../../lib/balancer/suggestions'
 import { pickThumbnail } from '../../../lib/balancer/thumbnails'
+
+function ingName(ing: IngredientDefinition, lang: Lang): string {
+  return lang === 'en' && ing.nomeEN ? ing.nomeEN : ing.nome
+}
 
 interface Props { lang: Lang }
 
@@ -45,7 +49,7 @@ function AddIngredientDropdown({ group, lang, onAdd }: { group: IngredientGroup;
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const filtered = ingredients.filter(i => i.group === group && i.nome.toLowerCase().includes(query.toLowerCase()))
+  const filtered = ingredients.filter(i => i.group === group && ingName(i, lang).toLowerCase().includes(query.toLowerCase()))
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
@@ -70,7 +74,7 @@ function AddIngredientDropdown({ group, lang, onAdd }: { group: IngredientGroup;
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-surface)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 onClick={() => { onAdd(ing.id); setOpen(false); setQuery('') }}>
-                {ing.nome}
+                {ingName(ing, lang)}
               </button>
             ))}
           </div>
@@ -80,7 +84,7 @@ function AddIngredientDropdown({ group, lang, onAdd }: { group: IngredientGroup;
   )
 }
 
-function IngredientRow({ line, totalWeightG }: { line: RecipeLine; totalWeightG: number }) {
+function IngredientRow({ line, totalWeightG, lang }: { line: RecipeLine; totalWeightG: number; lang: Lang }) {
   const { updateWeight, removeLine } = useBalancerStore()
   const ing = line.ingredient
 
@@ -103,7 +107,7 @@ function IngredientRow({ line, totalWeightG }: { line: RecipeLine; totalWeightG:
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: COL_WIDTHS, gap: 2, padding: '3px 8px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-      <span className="text-xs truncate" style={{ color: 'var(--color-text)' }} title={ing.nome}>{ing.nome}</span>
+      <span className="text-xs truncate" style={{ color: 'var(--color-text)' }} title={ingName(ing, lang)}>{ingName(ing, lang)}</span>
       <input type="number" min={0} value={line.weightG === 0 ? '' : line.weightG} placeholder="0"
         onChange={e => updateWeight(line.id, parseFloat(e.target.value) || 0)}
         className="text-xs text-center rounded px-1 py-0.5 w-full font-mono"
@@ -119,7 +123,7 @@ function IngredientRow({ line, totalWeightG }: { line: RecipeLine; totalWeightG:
   )
 }
 
-const COL_WIDTHS = '1fr 68px 44px 42px 42px 40px 40px 38px 24px'
+const COL_WIDTHS = '120px 68px 44px 42px 42px 40px 40px 38px 24px'
 
 /* ─── Save modal (name-based) ─────────────────────────────── */
 
@@ -423,7 +427,7 @@ export default function BilanciamentoTab({ lang }: Props) {
       <div className="flex gap-4 items-start" style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
 
         {/* ── INGREDIENT TABLE ─────────────────────────── */}
-        <div style={{ flex: '1 1 420px', minWidth: 380 }}>
+        <div style={{ flex: '0 0 490px', minWidth: 470 }}>
           {/* Table header */}
           <div className="rounded-t-lg" style={{ background: 'var(--color-surface-deep)', border: '1px solid var(--color-border)', borderBottom: 'none' }}>
             <div style={{ display: 'grid', gridTemplateColumns: COL_WIDTHS, gap: 2, padding: '6px 8px' }}>
@@ -454,7 +458,7 @@ export default function BilanciamentoTab({ lang }: Props) {
                 </button>
                 {!collapsed && (
                   <>
-                    {groupLines.map(line => <IngredientRow key={line.id} line={line} totalWeightG={balance.totalWeightG} />)}
+                    {groupLines.map(line => <IngredientRow key={line.id} line={line} totalWeightG={balance.totalWeightG} lang={lang} />)}
                     <div className="px-2 py-1.5" style={{ background: 'var(--color-base)' }}>
                       <AddIngredientDropdown group={group} lang={lang} onAdd={(id) => addLine(id, group)} />
                     </div>
@@ -481,7 +485,7 @@ export default function BilanciamentoTab({ lang }: Props) {
         </div>
 
         {/* ── SIDEBAR ──────────────────────────────────── */}
-        <div style={{ flex: '0 0 300px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ flex: '1 1 340px', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {/* Suggestions */}
           <div className="rounded-xl p-3" style={{

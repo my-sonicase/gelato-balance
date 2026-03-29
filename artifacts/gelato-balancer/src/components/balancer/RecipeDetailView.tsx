@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { useBalancerStore } from '../../store/balancerStore'
 import { TRANSLATIONS, type Lang } from '../../lib/balancer/i18n'
-import type { Recipe, IngredientGroup } from '../../lib/balancer/types'
+import type { IngredientDefinition, Recipe, IngredientGroup } from '../../lib/balancer/types'
 import type { DefaultRecipeTemplate } from '../../lib/balancer/defaultRecipeData'
 import { buildRecipeFromTemplate, getTemplateName } from '../../lib/balancer/defaultRecipeData'
+
+function ingName(ing: IngredientDefinition, lang: Lang): string {
+  return lang === 'en' && ing.nomeEN ? ing.nomeEN : ing.nome
+}
 
 interface Props {
   recipe: Recipe | null
@@ -255,7 +259,7 @@ export default function RecipeDetailView({ recipe: recipeProp, template, lang, o
                     }}
                   >
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                      {line.ingredient.nome}
+                      {ingName(line.ingredient, lang)}
                     </span>
                     <div className="flex items-center gap-4 shrink-0">
                       <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>

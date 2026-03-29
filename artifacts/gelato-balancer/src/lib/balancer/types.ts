@@ -18,6 +18,7 @@ export type TabType = 'istruzioni' | 'configurazione' | 'bilanciamento' | 'gelat
 export interface IngredientDefinition {
   id: string
   nome: string
+  nomeEN?: string
   group: IngredientGroup
   acquaPct: number
   grassiPct: number
