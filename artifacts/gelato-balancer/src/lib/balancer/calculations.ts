@@ -40,12 +40,23 @@ export function calculateBalance(recipe: Recipe, ranges: ProfileRanges): RecipeB
     const sugarTotal = Object.values(ingredient.zuccheri).reduce((s, v) => s + (v ?? 0), 0)
     zuccheriG += weightG * sugarTotal / 100
 
-    for (const [sugarType, sugarPct] of Object.entries(ingredient.zuccheri)) {
-      const sugarWeightG = weightG * (sugarPct ?? 0) / 100
-      const constants = SUGAR_CONSTANTS[sugarType]
-      if (constants) {
-        podTotal += sugarWeightG * constants.POD / 100
-        pacTotal += sugarWeightG * constants.PAC / 100
+    if (ingredient.podDirect != null) {
+      podTotal += weightG * ingredient.podDirect / 100
+    } else {
+      for (const [sugarType, sugarPct] of Object.entries(ingredient.zuccheri)) {
+        const sugarWeightG = weightG * (sugarPct ?? 0) / 100
+        const constants = SUGAR_CONSTANTS[sugarType]
+        if (constants) podTotal += sugarWeightG * constants.POD / 100
+      }
+    }
+
+    if (ingredient.pacDirect != null) {
+      pacTotal += weightG * ingredient.pacDirect / 100
+    } else {
+      for (const [sugarType, sugarPct] of Object.entries(ingredient.zuccheri)) {
+        const sugarWeightG = weightG * (sugarPct ?? 0) / 100
+        const constants = SUGAR_CONSTANTS[sugarType]
+        if (constants) pacTotal += sugarWeightG * constants.PAC / 100
       }
     }
 
@@ -75,7 +86,7 @@ export function calculateBalance(recipe: Recipe, ranges: ProfileRanges): RecipeB
   const proteinKcal = slngPct * 0.35 * 4
   const kcalPer100gMix = fatKcal + sugarKcal + proteinKcal
   const kcalPer100gGelato = kcalPer100gMix / (1 + overrunPct / 100)
-  const temperaturaServizio = -3.7 * (pacValue / 100)
+  const temperaturaServizio = Math.round(-pacValue / 2)
 
   const outOfRange = [
     statusFor(zuccheriPct, ranges.zuccheri) !== 'ok',

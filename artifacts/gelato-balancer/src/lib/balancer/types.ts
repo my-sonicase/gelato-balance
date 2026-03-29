@@ -27,6 +27,8 @@ export interface IngredientDefinition {
   altriSolidiPct: number
   minPct?: number
   maxPct?: number
+  podDirect?: number
+  pacDirect?: number
   isCustom?: boolean
   isReadOnly?: boolean
 }

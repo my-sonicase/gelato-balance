@@ -1,4 +1,4 @@
-# Gelato Balancer PRO
+# Gelato Balance by Hila
 
 A professional gelato recipe balancing web application for gelato makers. Balance recipes across sugar, fat, MSNF (SLNG), POD (sweetening power), PAC (antifreeze power), and other solids simultaneously — all in real time.
 

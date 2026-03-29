@@ -132,7 +132,7 @@ export default function RecipeDetailView({ recipe: recipeProp, template, lang, o
         <div className="flex flex-col gap-4">
           {/* Print header (only visible on print) */}
           <div className="hidden print:block mb-2">
-            <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Gelato Balancer PRO</div>
+            <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Gelato Balance by Hila</div>
           </div>
 
           {/* Title */}

@@ -10,6 +10,8 @@ export interface IngredientDTO {
   slngPct: number
   altriSolidiPct: number
   zuccheri: Record<string, number>
+  podDirect?: number
+  pacDirect?: number
   minPct?: number
   maxPct?: number
   isCustom?: boolean
@@ -18,6 +20,10 @@ export interface IngredientDTO {
 
 function toNum(v: string | null | undefined): number {
   return v == null ? 0 : parseFloat(v)
+}
+
+function toNumOpt(v: string | null | undefined): number | undefined {
+  return v == null ? undefined : parseFloat(v)
 }
 
 export function mapSystemIngredient(row: SystemIngredient): IngredientDTO {
@@ -31,6 +37,8 @@ export function mapSystemIngredient(row: SystemIngredient): IngredientDTO {
     slngPct: toNum(row.slngPct),
     altriSolidiPct: toNum(row.altriSolidiPct),
     zuccheri: (row.zuccheri as Record<string, number>) ?? {},
+    podDirect: toNumOpt(row.podDirect),
+    pacDirect: toNumOpt(row.pacDirect),
     minPct: row.minPct != null ? toNum(row.minPct) : undefined,
     maxPct: row.maxPct != null ? toNum(row.maxPct) : undefined,
     isReadOnly: true,
@@ -49,6 +57,8 @@ export function mapUserIngredient(row: UserCustomIngredient): IngredientDTO {
     slngPct: toNum(row.slngPct),
     altriSolidiPct: toNum(row.altriSolidiPct),
     zuccheri: (row.zuccheri as Record<string, number>) ?? {},
+    podDirect: toNumOpt(row.podDirect),
+    pacDirect: toNumOpt(row.pacDirect),
     minPct: row.minPct != null ? toNum(row.minPct) : undefined,
     maxPct: row.maxPct != null ? toNum(row.maxPct) : undefined,
     isReadOnly: false,

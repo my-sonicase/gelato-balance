@@ -1,7 +1,24 @@
 import { useState } from 'react'
 import { useBalancerStore } from '../../../store/balancerStore'
 import { TRANSLATIONS, type Lang } from '../../../lib/balancer/i18n'
+import { SUGAR_CONSTANTS } from '../../../lib/balancer/constants'
 import type { IngredientDefinition, IngredientGroup } from '../../../lib/balancer/types'
+
+function computedPod(ing: IngredientDefinition): number {
+  if (ing.podDirect != null) return ing.podDirect
+  return Object.entries(ing.zuccheri).reduce((sum, [type, pct]) => {
+    const c = SUGAR_CONSTANTS[type]
+    return c ? sum + (pct ?? 0) * c.POD / 100 : sum
+  }, 0)
+}
+
+function computedPac(ing: IngredientDefinition): number {
+  if (ing.pacDirect != null) return ing.pacDirect
+  return Object.entries(ing.zuccheri).reduce((sum, [type, pct]) => {
+    const c = SUGAR_CONSTANTS[type]
+    return c ? sum + (pct ?? 0) * c.PAC / 100 : sum
+  }, 0)
+}
 
 function ingName(ing: IngredientDefinition, lang: Lang): string {
   return lang === 'en' && ing.nomeEN ? ing.nomeEN : ing.nome
@@ -182,6 +199,8 @@ export default function IngredientiTab({ lang }: Props) {
               <th style={thStyle}>{t.ingredienti.slng}</th>
               <th style={thStyle}>{t.ingredienti.altriSolidi}</th>
               <th style={{ ...thStyle, maxWidth: 120 }}>{t.ingredienti.zuccheri}</th>
+              <th style={thStyle}>POD</th>
+              <th style={thStyle}>PAC</th>
               <th style={thStyle}>{t.ingredienti.minPct}</th>
               <th style={thStyle}>{t.ingredienti.maxPct}</th>
               <th style={thStyle}></th>
@@ -209,6 +228,14 @@ export default function IngredientiTab({ lang }: Props) {
                   <td style={{ padding: '7px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>{ing.slngPct}</td>
                   <td style={{ padding: '7px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>{ing.altriSolidiPct}</td>
                   <td style={{ padding: '7px 6px', color: 'var(--color-text-muted)', fontSize: 11, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={sugarStr}>{sugarStr || '—'}</td>
+                  <td style={{ padding: '7px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>
+                    {computedPod(ing).toFixed(0)}
+                    {ing.podDirect != null && <span title="direct" style={{ color: 'var(--color-accent)', marginLeft: 2, fontSize: 9 }}>★</span>}
+                  </td>
+                  <td style={{ padding: '7px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>
+                    {computedPac(ing).toFixed(0)}
+                    {ing.pacDirect != null && <span title="direct" style={{ color: 'var(--color-accent)', marginLeft: 2, fontSize: 9 }}>★</span>}
+                  </td>
                   <td style={{ padding: '7px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>{ing.minPct ?? '—'}</td>
                   <td style={{ padding: '7px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>{ing.maxPct ?? '—'}</td>
                   <td style={{ padding: '7px 8px', textAlign: 'center' }}>
@@ -228,7 +255,7 @@ export default function IngredientiTab({ lang }: Props) {
               )
             })}
             {filtered.length === 0 && (
-              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-muted)', fontSize: 14 }}>—</td></tr>
+              <tr><td colSpan={12} style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-muted)', fontSize: 14 }}>—</td></tr>
             )}
           </tbody>
         </table>

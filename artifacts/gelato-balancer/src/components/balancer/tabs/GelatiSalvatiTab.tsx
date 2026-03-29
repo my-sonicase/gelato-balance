@@ -39,6 +39,7 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
   const t = TRANSLATIONS[lang]
   const { savedRecipes, loadRecipe, deleteSlot, profileRanges, isLoadingData, setActiveTab } = useBalancerStore()
   const [view, setView] = useState<ViewState>({ kind: 'list' })
+  const [search, setSearch] = useState('')
 
   const profileLabels: Record<ProfileType, string> = {
     gelato: t.profiles.gelato, sorbetto: t.profiles.sorbetto, granita: t.profiles.granita,
@@ -46,8 +47,11 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
     personalizzato1: t.profiles.personalizzato1, personalizzato2: t.profiles.personalizzato2,
   }
 
-  const systemRecipes = savedRecipes.filter(r => r.isSystemRecipe)
-  const userRecipes   = savedRecipes.filter(r => !r.isSystemRecipe)
+  const matchSearch = (r: Recipe) =>
+    !search || r.nome.toLowerCase().includes(search.toLowerCase())
+
+  const systemRecipes = savedRecipes.filter(r => r.isSystemRecipe && matchSearch(r))
+  const userRecipes   = savedRecipes.filter(r => !r.isSystemRecipe && matchSearch(r))
 
   /* ─── Recipe Detail View ──────────────────────────────── */
   if (view.kind === 'detail') {
@@ -66,19 +70,20 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-            {t.nav.myRecipes}
-          </h1>
-          {userRecipes.length > 0 && (
-            <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-              {userRecipes.length} {lang === 'it' ? 'ricette salvate' : 'saved recipes'}
-            </p>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <h1 className="text-lg font-semibold shrink-0" style={{ color: 'var(--color-text)' }}>
+          {t.nav.myRecipes}
+        </h1>
+        <input
+          type="text"
+          placeholder={lang === 'it' ? 'Cerca ricetta…' : 'Search recipe…'}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="text-sm px-3 py-1.5 rounded-lg"
+          style={{ border: '1px solid var(--color-border)', background: 'var(--color-base)', color: 'var(--color-text)', flex: '1 1 180px', minWidth: 140 }}
+        />
         <button onClick={onNewRecipe}
-          className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90"
+          className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90 shrink-0"
           style={{ background: 'var(--color-accent)', color: 'white' }}>
           + {t.nav.newRecipe}
         </button>

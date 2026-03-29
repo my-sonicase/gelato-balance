@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../../lib/authContext'
 
+const hilaLogo = `${import.meta.env.BASE_URL}hila-logo.png`
+
 export default function AuthModal() {
   const { login, signup } = useAuth()
   const [mode, setMode] = useState<'login' | 'signup'>('login')
@@ -27,12 +29,14 @@ export default function AuthModal() {
         style={{ background: 'var(--color-base)', border: '1px solid var(--color-border)' }}>
 
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-6">
-          <span className="inline-block w-2 h-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
-          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20, fontWeight: 500, color: 'var(--color-text)' }}>
-            Gelato Balancer
-          </span>
-          <span className="text-xs font-semibold rounded px-1.5 py-0.5" style={{ background: 'var(--color-accent)', color: 'white', fontSize: 9, letterSpacing: '0.12em' }}>PRO</span>
+        <div className="flex items-center gap-2.5 mb-6">
+          <img src={hilaLogo} alt="Hila" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />
+          <div style={{ lineHeight: 1.1 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 19, fontWeight: 500, color: 'var(--color-text)' }}>
+              Gelato Balance
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>by Hila</div>
+          </div>
         </div>
 
         <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-text)' }}>

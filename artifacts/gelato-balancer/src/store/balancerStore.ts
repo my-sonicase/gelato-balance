@@ -58,6 +58,7 @@ interface ApiIngredient {
   id: string; nome: string; nomeEN?: string; group: IngredientGroup
   acquaPct: string; grassiPct: string; slngPct: string; altriSolidiPct: string
   zuccheri: Record<string, number>
+  podDirect?: number; pacDirect?: number
   minPct?: string; maxPct?: string
   isCustom: boolean; isReadOnly?: boolean; isArchived?: boolean
 }
@@ -76,6 +77,8 @@ function mapApiIngredient(ai: ApiIngredient): IngredientDefinition {
     acquaPct: Number(ai.acquaPct), grassiPct: Number(ai.grassiPct),
     slngPct: Number(ai.slngPct), altriSolidiPct: Number(ai.altriSolidiPct),
     zuccheri: ai.zuccheri,
+    podDirect: ai.podDirect,
+    pacDirect: ai.pacDirect,
     isCustom: ai.isCustom, isReadOnly: ai.isReadOnly ?? false,
     minPct: ai.minPct !== undefined ? Number(ai.minPct) : undefined,
     maxPct: ai.maxPct !== undefined ? Number(ai.maxPct) : undefined,

@@ -165,8 +165,8 @@ export interface Translations {
 }
 
 const en: Translations = {
-  appName: 'Gelato Balancer',
-  pro: 'PRO',
+  appName: 'Gelato Balance',
+  pro: '',
   tabs: {
     istruzioni: 'Instructions',
     configurazione: 'Configuration',
@@ -311,7 +311,7 @@ const en: Translations = {
     newRecipe: 'New Recipe',
   },
   onboarding: {
-    title: 'Welcome to Gelato Balancer PRO',
+    title: 'Welcome to Gelato Balance',
     subtitle: 'A professional workspace for balanced gelato recipes.',
     bullet1: 'Build recipes by adding ingredients with precise gram weights',
     bullet2: 'Get real-time balance scores for sugar, fat, PAC, POD and more',
@@ -329,8 +329,8 @@ const en: Translations = {
 }
 
 const it: Translations = {
-  appName: 'Gelato Balancer',
-  pro: 'PRO',
+  appName: 'Gelato Balance',
+  pro: '',
   tabs: {
     istruzioni: 'Istruzioni',
     configurazione: 'Configurazione',
@@ -475,7 +475,7 @@ const it: Translations = {
     newRecipe: 'Nuova Ricetta',
   },
   onboarding: {
-    title: 'Benvenuto in Gelato Balancer PRO',
+    title: 'Benvenuto in Gelato Balance',
     subtitle: 'Lo spazio di lavoro professionale per ricette di gelato bilanciate.',
     bullet1: 'Costruisci ricette aggiungendo ingredienti con pesi in grammi precisi',
     bullet2: 'Visualizza in tempo reale zuccheri, grassi, PAC, POD e molto altro',

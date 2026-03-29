@@ -8,11 +8,11 @@ import IstruzioniTab from './tabs/IstruzioniTab'
 import ConfigurazioneTab from './tabs/ConfigurazioneTab'
 import BilanciamentoTab from './tabs/BilanciamentoTab'
 import GelatiSalvatiTab from './tabs/GelatiSalvatiTab'
-import CalcolatoriTab from './tabs/CalcolatoriTab'
 import IngredientiTab from './tabs/IngredientiTab'
 import AdminTab from '../admin/AdminTab'
+const hilaLogo = `${import.meta.env.BASE_URL}hila-logo.png`
 
-const SECONDARY_TABS: TabType[] = ['istruzioni', 'configurazione', 'calcolatori']
+const SECONDARY_TABS: TabType[] = ['istruzioni', 'configurazione']
 
 function OnboardingOverlay({ lang, onDismiss }: { lang: 'en' | 'it'; onDismiss: () => void }) {
   const t = TRANSLATIONS[lang]
@@ -26,14 +26,7 @@ function OnboardingOverlay({ lang, onDismiss }: { lang: 'en' | 'it'; onDismiss: 
         style={{ background: 'var(--color-base)', border: '1px solid var(--color-border)' }}
       >
         <div className="flex items-center gap-2.5 mb-2">
-          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '20px', fontWeight: 500, color: 'var(--color-text)' }}>
-            {t.appName}
-          </span>
-          <span className="text-xs font-semibold tracking-widest rounded px-1.5 py-0.5"
-            style={{ background: 'var(--color-accent)', color: 'white', fontSize: '9px', letterSpacing: '0.12em' }}>
-            {t.pro}
-          </span>
+          <img src={hilaLogo} alt="Hila" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />
         </div>
         <h2 className="text-xl font-semibold mt-4 mb-1" style={{ color: 'var(--color-text)' }}>
           {t.onboarding.title}
@@ -73,12 +66,9 @@ export default function BalancerApp() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem(ONBOARDING_KEY) } catch { return false }
   })
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const settingsRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
-  // Load API data when user changes (login/logout)
   useEffect(() => {
     if (user) loadAppData()
   }, [user?.id])
@@ -89,12 +79,9 @@ export default function BalancerApp() {
     setActiveTab('bilanciamento')
   }
   function handleNewRecipe() { clearRecipe(); setActiveTab('bilanciamento') }
-  function handlePrint() { window.print() }
-  function openSecondary(tab: TabType) { setActiveTab(tab); setSettingsOpen(false) }
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false)
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
@@ -113,25 +100,18 @@ export default function BalancerApp() {
     istruzioni: t.nav.instructions,
     configurazione: t.nav.configuration,
     calcolatori: t.nav.calculators,
-    admin: lang === 'it' ? 'Admin' : 'Admin',
+    admin: 'Admin',
   }
-
-  const secondaryMenuItems = [
-    { tab: 'istruzioni' as TabType, label: t.nav.instructions, icon: '?' },
-    { tab: 'configurazione' as TabType, label: t.nav.configuration, icon: '⚙' },
-    { tab: 'calcolatori' as TabType, label: t.nav.calculators, icon: '∑' },
-  ]
 
   const isSecondaryActive = SECONDARY_TABS.includes(activeTab)
 
-  // Fullscreen loading while auth resolves
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-base)' }}>
-        <div className="flex items-center gap-2.5">
-          <span className="inline-block w-2 h-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
-          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, fontWeight: 500, color: 'var(--color-text)' }}>
-            Gelato Balancer
+        <div className="flex items-center gap-3">
+          <img src={hilaLogo} alt="Hila" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
+          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20, fontWeight: 500, color: 'var(--color-text)' }}>
+            Gelato Balance
           </span>
         </div>
       </div>
@@ -140,25 +120,25 @@ export default function BalancerApp() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-base)', fontFamily: 'var(--font-body)' }}>
-      {/* Auth gate */}
       {!user && <AuthModal />}
-
       {showOnboarding && user && <OnboardingOverlay lang={lang} onDismiss={dismissOnboarding} />}
 
       {/* Header */}
       <header className="sticky top-0 z-40 no-print"
         style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', height: '56px' }}>
         <div className="max-w-screen-xl mx-auto h-full flex items-center justify-between px-4 gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="inline-block w-2 h-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
-            <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '22px', fontWeight: 500, color: 'var(--color-text)', lineHeight: 1 }}>
-              {t.appName}
-            </span>
-            <span className="ml-1 text-xs font-semibold tracking-widest rounded px-1.5 py-0.5"
-              style={{ background: 'var(--color-accent)', color: 'white', fontSize: '9px', letterSpacing: '0.12em' }}>
-              {t.pro}
-            </span>
+
+          {/* Branding */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <img src={hilaLogo} alt="Hila Sicilian Gelato" style={{ height: 34, width: 'auto', objectFit: 'contain' }} />
+            <div style={{ lineHeight: 1.1 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '20px', fontWeight: 500, color: 'var(--color-text)' }}>
+                Gelato Balance
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                by Hila
+              </div>
+            </div>
           </div>
 
           {/* Right actions */}
@@ -167,50 +147,18 @@ export default function BalancerApp() {
               <span className="text-xs px-2" style={{ color: 'var(--color-text-muted)' }}>Loading…</span>
             )}
 
-            <button onClick={handleNewRecipe}
-              className="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-              style={{ background: 'var(--color-accent)', color: 'white' }}>
-              + {t.nav.newRecipe}
+            {/* ? Instructions button */}
+            <button
+              onClick={() => setActiveTab('istruzioni')}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border font-semibold text-sm transition-colors"
+              style={{
+                border: '1px solid var(--color-border)',
+                background: activeTab === 'istruzioni' ? 'var(--color-surface-deep)' : 'transparent',
+                color: activeTab === 'istruzioni' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+              }}
+              title={t.nav.instructions}>
+              ?
             </button>
-
-            <button onClick={handlePrint}
-              className="text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors"
-              style={{ border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', background: 'transparent' }}>
-              {t.actions.stampa}
-            </button>
-
-            {/* Settings dropdown */}
-            <div className="relative ml-1" ref={settingsRef}>
-              <button onClick={() => setSettingsOpen(o => !o)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors"
-                style={{ border: '1px solid var(--color-border)', background: isSecondaryActive || settingsOpen ? 'var(--color-surface-deep)' : 'transparent', color: isSecondaryActive ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
-                title={t.nav.settings}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              </button>
-              {settingsOpen && (
-                <div className="absolute right-0 top-10 w-48 rounded-xl shadow-lg py-1 z-50"
-                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-                  <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-widest"
-                    style={{ color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}>
-                    {t.nav.settings}
-                  </div>
-                  {secondaryMenuItems.map(({ tab, label, icon }) => (
-                    <button key={tab} onClick={() => openSecondary(tab)}
-                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors"
-                      style={{ background: activeTab === tab ? 'var(--color-surface-deep)' : 'transparent', color: activeTab === tab ? 'var(--color-accent)' : 'var(--color-text)', fontWeight: activeTab === tab ? 600 : 400 }}>
-                      <span className="w-5 h-5 rounded flex items-center justify-center text-xs shrink-0"
-                        style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>
-                        {icon}
-                      </span>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Language toggle */}
             <div className="flex items-center gap-0.5 text-sm font-medium">
@@ -234,9 +182,7 @@ export default function BalancerApp() {
                   <div className="absolute right-0 top-10 w-56 rounded-xl shadow-lg py-1 z-50"
                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
                     <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                      <div className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {user.email}
-                      </div>
+                      <div className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{user.email}</div>
                       <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
                         {isAdmin ? '★ Admin' : 'User'}
                       </div>
@@ -302,7 +248,6 @@ export default function BalancerApp() {
         {activeTab === 'ingredienti' && <IngredientiTab lang={lang} />}
         {activeTab === 'istruzioni' && <IstruzioniTab lang={lang} />}
         {activeTab === 'configurazione' && <ConfigurazioneTab lang={lang} />}
-        {activeTab === 'calcolatori' && <CalcolatoriTab lang={lang} />}
         {activeTab === 'admin' && isAdmin && <AdminTab lang={lang} />}
       </main>
     </div>

@@ -20,7 +20,8 @@ router.post('/admin/ingredients', requireAdmin, async (req, res) => {
   const body = req.body as {
     id?: string; nome?: string; nomeEN?: string; group?: string
     acquaPct?: number; grassiPct?: number; slngPct?: number; altriSolidiPct?: number
-    zuccheri?: Record<string, number>; minPct?: number; maxPct?: number
+    zuccheri?: Record<string, number>; podDirect?: number; pacDirect?: number
+    minPct?: number; maxPct?: number
   }
   if (!body.nome || !body.group) {
     res.status(400).json({ error: 'nome and group are required' })
@@ -38,6 +39,8 @@ router.post('/admin/ingredients', requireAdmin, async (req, res) => {
       slngPct: String(body.slngPct ?? 0),
       altriSolidiPct: String(body.altriSolidiPct ?? 0),
       zuccheri: body.zuccheri ?? {},
+      podDirect: body.podDirect != null ? String(body.podDirect) : undefined,
+      pacDirect: body.pacDirect != null ? String(body.pacDirect) : undefined,
       minPct: body.minPct != null ? String(body.minPct) : undefined,
       maxPct: body.maxPct != null ? String(body.maxPct) : undefined,
     }).returning()
@@ -53,7 +56,8 @@ router.patch('/admin/ingredients/:id', requireAdmin, async (req, res) => {
   const body = req.body as {
     nome?: string; nomeEN?: string; group?: string
     acquaPct?: number; grassiPct?: number; slngPct?: number; altriSolidiPct?: number
-    zuccheri?: Record<string, number>; minPct?: number; maxPct?: number; isArchived?: boolean
+    zuccheri?: Record<string, number>; podDirect?: number | null; pacDirect?: number | null
+    minPct?: number; maxPct?: number; isArchived?: boolean
   }
   try {
     const updates: Record<string, unknown> = { updatedAt: new Date() }
@@ -65,6 +69,8 @@ router.patch('/admin/ingredients/:id', requireAdmin, async (req, res) => {
     if (body.slngPct !== undefined) updates.slngPct = String(body.slngPct)
     if (body.altriSolidiPct !== undefined) updates.altriSolidiPct = String(body.altriSolidiPct)
     if (body.zuccheri !== undefined) updates.zuccheri = body.zuccheri
+    if ('podDirect' in body) updates.podDirect = body.podDirect != null ? String(body.podDirect) : null
+    if ('pacDirect' in body) updates.pacDirect = body.pacDirect != null ? String(body.pacDirect) : null
     if (body.minPct !== undefined) updates.minPct = String(body.minPct)
     if (body.maxPct !== undefined) updates.maxPct = String(body.maxPct)
     if (body.isArchived !== undefined) updates.isArchived = body.isArchived
