@@ -137,8 +137,9 @@ type SaveState =
 /* ─── Load modal ──────────────────────────────────────────── */
 
 function LoadRecipeModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
-  const { savedSlots, ingredients, loadRecipe } = useBalancerStore()
-  const hasSaved = Object.keys(savedSlots).length > 0
+  const { savedRecipes, ingredients, loadRecipe } = useBalancerStore()
+  const systemRecipes = savedRecipes.filter(r => r.isSystemRecipe)
+  const userSaved = savedRecipes.filter(r => !r.isSystemRecipe)
 
   function importDefault(tpl: (typeof DEFAULT_RECIPE_TEMPLATES)[number]) {
     try {
@@ -148,9 +149,7 @@ function LoadRecipeModal({ lang, onClose }: { lang: Lang; onClose: () => void })
     } catch (e) { console.error(e) }
   }
 
-  function importSaved(slotName: string) {
-    const saved = savedSlots[slotName]
-    if (!saved) return
+  function importSaved(saved: import('../../../lib/balancer/types').Recipe) {
     loadRecipe({ ...saved, id: crypto.randomUUID(), updatedAt: new Date().toISOString() })
     onClose()
   }
@@ -189,14 +188,14 @@ function LoadRecipeModal({ lang, onClose }: { lang: Lang; onClose: () => void })
               ))}
             </div>
           </div>
-          {hasSaved && (
+          {userSaved.length > 0 && (
             <div>
               <div className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}>
                 {lang === 'it' ? 'Le tue ricette' : 'Your saved recipes'}
               </div>
               <div className="space-y-1">
-                {Object.entries(savedSlots).map(([slotName, saved]) => (
-                  <button key={slotName} onClick={() => importSaved(slotName)}
+                {userSaved.map(saved => (
+                  <button key={saved.id} onClick={() => importSaved(saved)}
                     className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl"
                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
@@ -207,7 +206,7 @@ function LoadRecipeModal({ lang, onClose }: { lang: Lang; onClose: () => void })
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm truncate" style={{ color: 'var(--color-text)' }}>{saved.nome || slotName}</div>
+                      <div className="font-medium text-sm truncate" style={{ color: 'var(--color-text)' }}>{saved.nome}</div>
                       <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{saved.profile} · {saved.lines.reduce((s, l) => s + l.weightG, 0).toFixed(0)}g</div>
                     </div>
                     <span style={{ color: 'var(--color-accent)', fontSize: 12 }}>→</span>
@@ -237,7 +236,7 @@ export default function BilanciamentoTab({ lang }: Props) {
   const {
     recipe, balance, profileRanges,
     setRecipeName, setProfile, setOverrun, addLine,
-    savedSlots, saveToSlot, setActiveTab,
+    savedRecipes, saveToSlot, setActiveTab,
   } = useBalancerStore()
   const t = TRANSLATIONS[lang]
   const [collapsedGroups, setCollapsedGroups] = useState<Set<IngredientGroup>>(new Set())
@@ -267,16 +266,17 @@ export default function BilanciamentoTab({ lang }: Props) {
       setSaveState({ type: 'default-protected', name })
       return
     }
-    if (savedSlots[name]) {
+    const existingUser = savedRecipes.find(r => !r.isSystemRecipe && r.nome === name)
+    if (existingUser) {
       setSaveState({ type: 'conflict', name })
       return
     }
     doSave(name)
   }
 
-  function doSave(name: string) {
+  async function doSave(name: string) {
     const thumb = pickThumbnail(recipe.profile, name)
-    saveToSlot(name, thumb)
+    await saveToSlot(name, thumb)
     setSaveState({ type: 'success', name })
     setTimeout(() => setSaveState({ type: 'idle' }), 2500)
   }

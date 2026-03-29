@@ -3,7 +3,6 @@ import { useBalancerStore } from '../../../store/balancerStore'
 import { TRANSLATIONS, type Lang } from '../../../lib/balancer/i18n'
 import type { ProfileType, Recipe } from '../../../lib/balancer/types'
 import { calculateBalance } from '../../../lib/balancer/calculations'
-import { DEFAULT_RECIPE_TEMPLATES, type DefaultRecipeTemplate, buildRecipeFromTemplate, getTemplateName } from '../../../lib/balancer/defaultRecipeData'
 import RecipeDetailView from '../RecipeDetailView'
 
 interface Props {
@@ -34,14 +33,11 @@ const PROFILE_COLORS: Record<string, string> = {
   personalizzato2: '#7A2D4A',
 }
 
-type ViewState =
-  | { kind: 'list' }
-  | { kind: 'default'; template: DefaultRecipeTemplate }
-  | { kind: 'saved'; slotName: string; recipe: Recipe }
+type ViewState = { kind: 'list' } | { kind: 'detail'; recipe: Recipe }
 
 export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
   const t = TRANSLATIONS[lang]
-  const { savedSlots, loadFromSlot, deleteSlot, profileRanges, ingredients, setActiveTab } = useBalancerStore()
+  const { savedRecipes, loadRecipe, deleteSlot, profileRanges, isLoadingData, setActiveTab } = useBalancerStore()
   const [view, setView] = useState<ViewState>({ kind: 'list' })
 
   const profileLabels: Record<ProfileType, string> = {
@@ -50,25 +46,11 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
     personalizzato1: t.profiles.personalizzato1, personalizzato2: t.profiles.personalizzato2,
   }
 
-  const totalSaved = Object.keys(savedSlots).length
+  const systemRecipes = savedRecipes.filter(r => r.isSystemRecipe)
+  const userRecipes   = savedRecipes.filter(r => !r.isSystemRecipe)
 
   /* ─── Recipe Detail View ──────────────────────────────── */
-  if (view.kind === 'default') {
-    const template = view.template
-    let builtRecipe: Recipe | null = null
-    try { builtRecipe = buildRecipeFromTemplate(template, ingredients) } catch { builtRecipe = null }
-    return (
-      <RecipeDetailView
-        recipe={builtRecipe}
-        template={template}
-        lang={lang}
-        onBack={() => setView({ kind: 'list' })}
-        onImport={() => setActiveTab('bilanciamento')}
-      />
-    )
-  }
-
-  if (view.kind === 'saved') {
+  if (view.kind === 'detail') {
     return (
       <RecipeDetailView
         recipe={view.recipe}
@@ -89,91 +71,86 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
           <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
             {t.nav.myRecipes}
           </h1>
-          {totalSaved > 0 && (
+          {userRecipes.length > 0 && (
             <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-              {totalSaved} {lang === 'it' ? 'ricette salvate' : 'saved recipes'}
+              {userRecipes.length} {lang === 'it' ? 'ricette salvate' : 'saved recipes'}
             </p>
           )}
         </div>
-        <button
-          onClick={onNewRecipe}
+        <button onClick={onNewRecipe}
           className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90"
-          style={{ background: 'var(--color-accent)', color: 'white' }}
-        >
+          style={{ background: 'var(--color-accent)', color: 'white' }}>
           + {t.nav.newRecipe}
         </button>
       </div>
 
-      {/* ── DEFAULT / INCLUDED RECIPES ─────────────────── */}
-      <section className="mb-10">
-        <h2
-          className="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2"
-          style={{ color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}
-        >
-          <span style={{ color: 'var(--color-accent)' }}>★</span>
-          {lang === 'it' ? 'Ricette incluse' : 'Included recipes'}
-        </h2>
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-          {DEFAULT_RECIPE_TEMPLATES.map(tpl => {
-            const name = getTemplateName(tpl, lang)
-            const profileColor = PROFILE_COLORS[tpl.profile] ?? 'var(--color-accent)'
-            return (
-              <button
-                key={tpl.id}
-                onClick={() => setView({ kind: 'default', template: tpl })}
-                className="text-left rounded-2xl overflow-hidden"
-                style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  transition: 'border-color 0.15s, box-shadow 0.15s',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'var(--color-accent)'
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(196,98,45,0.12)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--color-border)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              >
-                <div className="relative w-full" style={{ aspectRatio: '4/3', background: 'var(--color-surface-deep)', overflow: 'hidden' }}>
-                  <img
-                    src={tpl.imageUrl}
-                    alt={name}
-                    className="w-full h-full object-cover"
-                    style={{ transition: 'transform 0.3s' }}
-                    onMouseEnter={e => ((e.target as HTMLImageElement).style.transform = 'scale(1.04)')}
-                    onMouseLeave={e => ((e.target as HTMLImageElement).style.transform = 'scale(1)')}
-                    onError={e => {
-                      const el = e.target as HTMLImageElement
-                      el.style.display = 'none'
-                      const p = el.parentElement
-                      if (p) p.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:2.5rem">🍦</div>'
-                    }}
-                  />
-                  <div className="absolute top-2 left-2 text-white font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(196,98,45,0.92)', fontSize: '10px', backdropFilter: 'blur(4px)' }}>
-                    ★ {lang === 'it' ? 'Inclusa' : 'Included'}
-                  </div>
-                  <div className="absolute top-2 right-2 text-white font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: `${profileColor}DD`, fontSize: '10px', backdropFilter: 'blur(4px)' }}>
-                    {profileLabels[tpl.profile]}
-                  </div>
-                </div>
-                <div className="p-3">
-                  <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{name}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                    {lang === 'it' ? 'Apri e scala →' : 'Open and scale →'}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
+      {/* ── SYSTEM / INCLUDED RECIPES ────────────────────── */}
+      {isLoadingData ? (
+        <div className="flex items-center justify-center py-12">
+          <span style={{ color: 'var(--color-text-muted)' }}>
+            {lang === 'it' ? 'Caricamento ricette…' : 'Loading recipes…'}
+          </span>
         </div>
-      </section>
+      ) : (
+        <section className="mb-10">
+          <h2 className="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2"
+            style={{ color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}>
+            <span style={{ color: 'var(--color-accent)' }}>★</span>
+            {lang === 'it' ? 'Ricette incluse' : 'Included recipes'}
+          </h2>
+          {systemRecipes.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {lang === 'it' ? 'Nessuna ricetta di sistema.' : 'No system recipes.'}
+            </p>
+          ) : (
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+              {systemRecipes.map(recipe => {
+                const profileColor = PROFILE_COLORS[recipe.profile] ?? 'var(--color-accent)'
+                return (
+                  <button key={recipe.id} onClick={() => setView({ kind: 'detail', recipe })}
+                    className="text-left rounded-2xl overflow-hidden"
+                    style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', transition: 'border-color 0.15s, box-shadow 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(196,98,45,0.12)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none' }}>
+                    <div className="relative w-full" style={{ aspectRatio: '4/3', background: 'var(--color-surface-deep)', overflow: 'hidden' }}>
+                      {recipe.thumbnail ? (
+                        <img src={recipe.thumbnail} alt={recipe.nome}
+                          className="w-full h-full object-cover"
+                          onError={e => {
+                            const el = e.target as HTMLImageElement
+                            el.style.display = 'none'
+                            const p = el.parentElement
+                            if (p) p.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:2.5rem">🍦</div>'
+                          }}
+                        />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '2.5rem' }}>🍦</div>
+                      )}
+                      <div className="absolute top-2 left-2 text-white font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(196,98,45,0.92)', fontSize: '10px', backdropFilter: 'blur(4px)' }}>
+                        ★ {lang === 'it' ? 'Inclusa' : 'Included'}
+                      </div>
+                      <div className="absolute top-2 right-2 text-white font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: `${profileColor}DD`, fontSize: '10px', backdropFilter: 'blur(4px)' }}>
+                        {profileLabels[recipe.profile]}
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{recipe.nome}</div>
+                      <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                        {lang === 'it' ? 'Apri e scala →' : 'Open and scale →'}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── PERSONAL SAVED RECIPES ─────────────────────── */}
-      {totalSaved === 0 ? (
+      {userRecipes.length === 0 ? (
         <div className="rounded-2xl p-10 text-center mb-8"
           style={{ background: 'var(--color-surface)', border: '1px dashed var(--color-border)' }}>
           <div className="text-2xl mb-3">✎</div>
@@ -198,7 +175,7 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
           </h2>
 
           {PROFILES.map(profile => {
-            const profileSaved = Object.entries(savedSlots).filter(([, r]) => r.profile === profile)
+            const profileSaved = userRecipes.filter(r => r.profile === profile)
             if (profileSaved.length === 0) return null
             return (
               <section key={profile} className="mb-8">
@@ -207,7 +184,7 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
                   {profileLabels[profile]}
                 </h3>
                 <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-                  {profileSaved.map(([slotName, saved]) => {
+                  {profileSaved.map(saved => {
                     const stats = recipeStats(saved)
                     const balance = calculateBalance(saved, profileRanges[saved.profile])
                     const profileColor = PROFILE_COLORS[saved.profile] ?? 'var(--color-accent)'
@@ -217,39 +194,26 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
                       'var(--color-error)'
 
                     return (
-                      <div
-                        key={slotName}
+                      <div key={saved.id}
                         className="rounded-2xl overflow-hidden cursor-pointer"
                         style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', transition: 'border-color 0.15s, box-shadow 0.15s' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(196,98,45,0.10)' }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none' }}
-                        onClick={() => setView({ kind: 'saved', slotName, recipe: saved })}
-                      >
-                        {/* Thumbnail image */}
+                        onClick={() => setView({ kind: 'detail', recipe: saved })}>
                         {saved.thumbnail ? (
                           <div className="relative w-full" style={{ aspectRatio: '4/3', background: 'var(--color-surface-deep)', overflow: 'hidden' }}>
-                            <img
-                              src={saved.thumbnail}
-                              alt={saved.nome}
-                              className="w-full h-full object-cover"
-                              onError={e => {
-                                const el = e.target as HTMLImageElement
-                                el.style.display = 'none'
-                              }}
-                            />
-                            {/* Profile badge */}
+                            <img src={saved.thumbnail} alt={saved.nome} className="w-full h-full object-cover"
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                             <div className="absolute top-2 right-2 text-white font-bold px-2 py-0.5 rounded-full"
                               style={{ background: `${profileColor}DD`, fontSize: '10px', backdropFilter: 'blur(4px)' }}>
                               {profileLabels[saved.profile]}
                             </div>
-                            {/* Balance dot */}
                             <div className="absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center text-white font-bold"
                               style={{ background: statusColor, fontSize: 10 }}>
                               {balance.overallStatus === 'bilanciata' ? '✓' : balance.overallStatus === 'quasi-bilanciata' ? '~' : '!'}
                             </div>
                           </div>
                         ) : (
-                          /* No thumbnail: coloured header band */
                           <div className="w-full flex items-center justify-between px-3 py-2"
                             style={{ background: `${profileColor}18`, borderBottom: '1px solid var(--color-border)' }}>
                             <span className="text-xs font-bold" style={{ color: profileColor }}>{profileLabels[saved.profile]}</span>
@@ -258,31 +222,22 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
                             </span>
                           </div>
                         )}
-
                         <div className="p-3 flex flex-col gap-2">
                           <div className="font-semibold text-sm leading-tight" style={{ color: 'var(--color-text)' }}>
-                            {saved.nome || slotName}
+                            {saved.nome}
                           </div>
                           {stats && (
                             <div className="flex gap-1.5 flex-wrap">
-                              <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>
-                                Z {stats.zuccheri}%
-                              </span>
-                              <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>
-                                G {stats.grassi}%
-                              </span>
-                              <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>
-                                {stats.totalG}g
-                              </span>
+                              <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>Z {stats.zuccheri}%</span>
+                              <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>G {stats.grassi}%</span>
+                              <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--color-surface-deep)', color: 'var(--color-text-muted)' }}>{stats.totalG}g</span>
                             </div>
                           )}
                           <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                             {t.myRecipes.savedOn} {new Date(saved.updatedAt).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
-                          {/* Actions */}
                           <div className="flex gap-2 mt-1 pt-1" onClick={e => e.stopPropagation()}>
-                            <button
-                              onClick={() => loadFromSlot(slotName)}
+                            <button onClick={() => loadRecipe(saved)}
                               className="flex-1 text-xs font-semibold py-1.5 rounded-lg"
                               style={{ background: 'var(--color-accent)', color: 'white' }}>
                               {t.myRecipes.loadRecipe}
@@ -290,7 +245,7 @@ export default function GelatiSalvatiTab({ lang, onNewRecipe }: Props) {
                             <button
                               onClick={() => {
                                 if (confirm(lang === 'it' ? 'Eliminare questa ricetta?' : 'Delete this recipe?'))
-                                  deleteSlot(slotName)
+                                  deleteSlot(saved.id)
                               }}
                               className="text-xs px-2.5 py-1.5 rounded-lg"
                               style={{ border: '1px solid var(--color-border)', color: 'var(--color-error)', background: 'transparent' }}>

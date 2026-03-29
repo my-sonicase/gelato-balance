@@ -13,7 +13,7 @@ export type IngredientGroup =
   | 'latticiniUova' | 'neutriBasi' | 'zuccheri' | 'ingredientiPrincipali'
   | 'fruttaVerdura' | 'alcolici' | 'alimentiTritati'
 
-export type TabType = 'istruzioni' | 'configurazione' | 'bilanciamento' | 'gelatiSalvati' | 'calcolatori' | 'ingredienti'
+export type TabType = 'istruzioni' | 'configurazione' | 'bilanciamento' | 'gelatiSalvati' | 'calcolatori' | 'ingredienti' | 'admin'
 
 export interface IngredientDefinition {
   id: string
@@ -66,6 +66,7 @@ export interface Recipe {
   slotName?: string
   notes?: string
   thumbnail?: string
+  isSystemRecipe?: boolean
   createdAt: string
   updatedAt: string
 }
