@@ -74,7 +74,7 @@ interface BalancerStore {
   setActiveTab: (tab: TabType) => void
 
   savedSlots: Record<string, Recipe>
-  saveToSlot: (slotName: string) => void
+  saveToSlot: (slotName: string, thumbnail?: string) => void
   loadFromSlot: (slotName: string) => void
   deleteSlot: (slotName: string) => void
 }
@@ -237,9 +237,14 @@ export const useBalancerStore = create<BalancerStore>((set, get) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
 
   savedSlots,
-  saveToSlot: (slotName) => {
+  saveToSlot: (slotName, thumbnail) => {
     const { recipe } = get()
-    const slot = { ...recipe, slotName, updatedAt: new Date().toISOString() }
+    const slot = {
+      ...recipe,
+      slotName,
+      thumbnail: thumbnail ?? recipe.thumbnail,
+      updatedAt: new Date().toISOString(),
+    }
     const slots = { ...get().savedSlots, [slotName]: slot }
     saveToStorage(STORAGE_KEYS.SAVED_SLOTS, slots)
     set({ savedSlots: slots })

@@ -64,6 +64,7 @@ export interface Recipe {
   overrunPct: number
   slotName?: string
   notes?: string
+  thumbnail?: string
   createdAt: string
   updatedAt: string
 }
