@@ -136,6 +136,32 @@ export interface Translations {
     glossary: string
     credits: string
   }
+  nav: {
+    myRecipes: string
+    balanceTool: string
+    ingredientsDb: string
+    settings: string
+    instructions: string
+    configuration: string
+    calculators: string
+    newRecipe: string
+  }
+  onboarding: {
+    title: string
+    subtitle: string
+    bullet1: string
+    bullet2: string
+    bullet3: string
+    cta: string
+  }
+  myRecipes: {
+    emptyTitle: string
+    emptyDesc: string
+    createFirst: string
+    savedOn: string
+    loadRecipe: string
+    noRecipesYet: string
+  }
 }
 
 const en: Translations = {
@@ -274,6 +300,32 @@ const en: Translations = {
     glossary: 'Glossary',
     credits: 'Credits',
   },
+  nav: {
+    myRecipes: 'My Recipes',
+    balanceTool: 'Balance Tool',
+    ingredientsDb: 'Ingredients',
+    settings: 'Settings',
+    instructions: 'Instructions',
+    configuration: 'Configuration',
+    calculators: 'Calculators',
+    newRecipe: 'New Recipe',
+  },
+  onboarding: {
+    title: 'Welcome to Gelato Balancer PRO',
+    subtitle: 'A professional workspace for balanced gelato recipes.',
+    bullet1: 'Build recipes by adding ingredients with precise gram weights',
+    bullet2: 'Get real-time balance scores for sugar, fat, PAC, POD and more',
+    bullet3: 'Save and compare recipes across 7 profile types',
+    cta: 'Start Balancing',
+  },
+  myRecipes: {
+    emptyTitle: 'No recipes saved yet',
+    emptyDesc: 'Create your first recipe in the Balance Tool, then save it here.',
+    createFirst: 'Create your first recipe',
+    savedOn: 'Saved',
+    loadRecipe: 'Open',
+    noRecipesYet: 'No recipes yet',
+  },
 }
 
 const it: Translations = {
@@ -411,6 +463,32 @@ const it: Translations = {
     howToUse: 'Come usare ogni scheda',
     glossary: 'Glossario',
     credits: 'Crediti',
+  },
+  nav: {
+    myRecipes: 'Le Mie Ricette',
+    balanceTool: 'Bilanciamento',
+    ingredientsDb: 'Ingredienti',
+    settings: 'Impostazioni',
+    instructions: 'Istruzioni',
+    configuration: 'Configurazione',
+    calculators: 'Calcolatori',
+    newRecipe: 'Nuova Ricetta',
+  },
+  onboarding: {
+    title: 'Benvenuto in Gelato Balancer PRO',
+    subtitle: 'Lo spazio di lavoro professionale per ricette di gelato bilanciate.',
+    bullet1: 'Costruisci ricette aggiungendo ingredienti con pesi in grammi precisi',
+    bullet2: 'Visualizza in tempo reale zuccheri, grassi, PAC, POD e molto altro',
+    bullet3: 'Salva e confronta ricette su 7 tipi di profilo diversi',
+    cta: 'Inizia a Bilanciare',
+  },
+  myRecipes: {
+    emptyTitle: 'Nessuna ricetta salvata',
+    emptyDesc: 'Crea la tua prima ricetta nello strumento di bilanciamento, poi salvala qui.',
+    createFirst: 'Crea la tua prima ricetta',
+    savedOn: 'Salvato',
+    loadRecipe: 'Apri',
+    noRecipesYet: 'Ancora nessuna ricetta',
   },
 }
 

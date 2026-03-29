@@ -233,7 +233,7 @@ export const useBalancerStore = create<BalancerStore>((set, get) => ({
     set({ recipe, balance, activeTab: 'bilanciamento' })
   },
 
-  activeTab: 'bilanciamento',
+  activeTab: 'gelatiSalvati',
   setActiveTab: (activeTab) => set({ activeTab }),
 
   savedSlots,
