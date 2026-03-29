@@ -14,6 +14,20 @@ interface AuthContextType {
   logout: () => Promise<void>
 }
 
+const TOKEN_KEY = 'gelato-balancer:token'
+
+export function getStoredToken(): string | null {
+  try { return localStorage.getItem(TOKEN_KEY) } catch { return null }
+}
+
+function storeToken(token: string): void {
+  try { localStorage.setItem(TOKEN_KEY, token) } catch { /* ignore */ }
+}
+
+function clearToken(): void {
+  try { localStorage.removeItem(TOKEN_KEY) } catch { /* ignore */ }
+}
+
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -21,10 +35,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
+    const token = getStoredToken()
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    fetch('/api/auth/me', { credentials: 'include', headers })
       .then(r => r.ok ? r.json() : null)
-      .then((data: AuthUser | null) => setUser(data))
-      .catch(() => setUser(null))
+      .then((data: (AuthUser & { token?: string }) | null) => {
+        if (data) {
+          if (data.token) storeToken(data.token)
+          setUser({ id: data.id, email: data.email, role: data.role })
+        } else {
+          clearToken()
+          setUser(null)
+        }
+      })
+      .catch(() => { clearToken(); setUser(null) })
       .finally(() => setIsLoading(false))
   }, [])
 
@@ -36,7 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     const data = await r.json()
     if (!r.ok) return data.error as string
-    setUser(data as AuthUser)
+    if (data.token) storeToken(data.token)
+    setUser({ id: data.id, email: data.email, role: data.role })
     return null
   }, [])
 
@@ -48,12 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     const data = await r.json()
     if (!r.ok) return data.error as string
-    setUser(data as AuthUser)
+    if (data.token) storeToken(data.token)
+    setUser({ id: data.id, email: data.email, role: data.role })
     return null
   }, [])
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    clearToken()
     setUser(null)
   }, [])
 

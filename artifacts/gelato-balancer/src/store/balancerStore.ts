@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { DEFAULT_PROFILE_RANGES, DEFAULT_OVERRUN, STORAGE_KEYS } from '../lib/balancer/constants'
 import { DEFAULT_INGREDIENTS } from '../lib/balancer/defaultIngredients'
 import { calculateBalance } from '../lib/balancer/calculations'
+import { getStoredToken } from '../lib/authContext'
 import type {
   IngredientDefinition, Recipe, RecipeLine, RecipeBalance,
   ProfileType, ProfileRanges, ParameterRange, IngredientGroup, TabType
@@ -28,10 +29,16 @@ function saveToStorage<T>(key: string, value: T): void {
 const API = (path: string) => `/api${path}`
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getStoredToken()
+  const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
   const r = await fetch(API(path), {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders,
+      ...(init?.headers ?? {}),
+    },
   })
   if (!r.ok) {
     const body = await r.json().catch(() => ({ error: r.statusText }))

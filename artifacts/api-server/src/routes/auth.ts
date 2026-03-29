@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { db, usersTable } from '@workspace/db'
 import { eq } from 'drizzle-orm'
-import { hashPassword, verifyPassword } from '../lib/auth'
+import { hashPassword, verifyPassword, signToken } from '../lib/auth'
 import { requireAuth } from '../middlewares/requireAuth'
 
 const router = Router()
@@ -28,16 +28,12 @@ router.post('/auth/signup', async (req, res) => {
       passwordHash,
       role: 'user',
     }).returning()
+    const token = signToken({ id: user.id, email: user.email, role: user.role })
     req.session.userId = user.id
     req.session.userEmail = user.email
     req.session.userRole = user.role
-    req.session.save((saveErr) => {
-      if (saveErr) {
-        req.log.error({ err: saveErr }, 'Session save error on signup')
-        res.status(500).json({ error: 'Internal server error' })
-        return
-      }
-      res.json({ id: user.id, email: user.email, role: user.role })
+    req.session.save(() => {
+      res.json({ id: user.id, email: user.email, role: user.role, token })
     })
   } catch (err) {
     req.log.error({ err }, 'Signup error')
@@ -57,16 +53,12 @@ router.post('/auth/login', async (req, res) => {
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }
+    const token = signToken({ id: user.id, email: user.email, role: user.role })
     req.session.userId = user.id
     req.session.userEmail = user.email
     req.session.userRole = user.role
-    req.session.save((saveErr) => {
-      if (saveErr) {
-        req.log.error({ err: saveErr }, 'Session save error on login')
-        res.status(500).json({ error: 'Internal server error' })
-        return
-      }
-      res.json({ id: user.id, email: user.email, role: user.role })
+    req.session.save(() => {
+      res.json({ id: user.id, email: user.email, role: user.role, token })
     })
   } catch (err) {
     req.log.error({ err }, 'Login error')
@@ -81,7 +73,8 @@ router.post('/auth/logout', (req, res) => {
 })
 
 router.get('/auth/me', requireAuth, (req, res) => {
-  res.json({ id: req.user!.id, email: req.user!.email, role: req.user!.role })
+  const token = signToken({ id: req.user!.id, email: req.user!.email, role: req.user!.role })
+  res.json({ id: req.user!.id, email: req.user!.email, role: req.user!.role, token })
 })
 
 export default router
