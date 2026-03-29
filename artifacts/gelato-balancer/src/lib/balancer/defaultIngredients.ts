@@ -45,6 +45,8 @@ export const DEFAULT_INGREDIENTS: IngredientDefinition[] = [
   { id: 'lattosio-pure', nome: 'Lattosio', group: 'zuccheri', acquaPct: 0, grassiPct: 0, slngPct: 0, zuccheri: { lattosio: 100 }, altriSolidiPct: 0, isReadOnly: true },
 
   // NEUTRI & BASI
+  { id: 'acqua', nome: 'Acqua', group: 'neutriBasi', acquaPct: 100, grassiPct: 0, slngPct: 0, zuccheri: {}, altriSolidiPct: 0, isReadOnly: true },
+  { id: 'sale', nome: 'Sale marino', group: 'neutriBasi', acquaPct: 0, grassiPct: 0, slngPct: 0, zuccheri: {}, altriSolidiPct: 0, isReadOnly: true },
   { id: 'neutro-gelato', nome: 'Neutro per gelato', group: 'neutriBasi', acquaPct: 0, grassiPct: 0, slngPct: 0, zuccheri: {}, altriSolidiPct: 100, minPct: 0.2, maxPct: 0.5, isReadOnly: true },
   { id: 'neutro-sorbetto', nome: 'Neutro per sorbetto', group: 'neutriBasi', acquaPct: 0, grassiPct: 0, slngPct: 0, zuccheri: {}, altriSolidiPct: 100, minPct: 0.2, maxPct: 0.5, isReadOnly: true },
   { id: 'neutro-vegan', nome: 'Neutro per gelato vegan', group: 'neutriBasi', acquaPct: 0, grassiPct: 0, slngPct: 0, zuccheri: {}, altriSolidiPct: 100, minPct: 0.2, maxPct: 0.5, isReadOnly: true },

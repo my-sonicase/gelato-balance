@@ -25,7 +25,8 @@ artifacts/gelato-balancer/src/
     types.ts             — TypeScript interfaces
     constants.ts         — Sugar POD/PAC constants, profile target ranges, slot names
     calculations.ts      — Recipe balance computation (Corvitto formulas)
-    defaultIngredients.ts— 60+ built-in ingredients (dairy, sugars, fruit, etc.)
+    defaultIngredients.ts— 60+ built-in ingredients (dairy, sugars, fruit, etc.) + acqua, sale
+    defaultRecipeData.ts — 5 default "included" recipe templates with images + buildRecipeFromTemplate()
     i18n.ts              — EN/IT translations
   store/
     balancerStore.ts     — Zustand store with full recipe/profile/slot management

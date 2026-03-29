@@ -3,6 +3,7 @@ import { useBalancerStore } from '../../../store/balancerStore'
 import { TRANSLATIONS, type Lang } from '../../../lib/balancer/i18n'
 import type { IngredientGroup, ProfileType, BalanceStatus, RecipeLine } from '../../../lib/balancer/types'
 import { SLOT_NAMES, SUGAR_CONSTANTS } from '../../../lib/balancer/constants'
+import { DEFAULT_RECIPE_TEMPLATES, buildRecipeFromTemplate, getTemplateName } from '../../../lib/balancer/defaultRecipeData'
 
 interface Props { lang: Lang }
 
@@ -89,6 +90,94 @@ function AddIngredientDropdown({ group, lang, onAdd }: { group: IngredientGroup;
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function LoadRecipeModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
+  const { savedSlots, ingredients, loadRecipe } = useBalancerStore()
+  const hasSaved = Object.keys(savedSlots).length > 0
+
+  function importDefault(tpl: (typeof DEFAULT_RECIPE_TEMPLATES)[number]) {
+    try {
+      const base = buildRecipeFromTemplate(tpl, ingredients)
+      const copy = { ...base, id: crypto.randomUUID(), nome: getTemplateName(tpl, lang), updatedAt: new Date().toISOString() }
+      loadRecipe(copy)
+      onClose()
+    } catch (e) { console.error(e) }
+  }
+
+  function importSaved(slotName: string) {
+    const saved = savedSlots[slotName]
+    if (!saved) return
+    loadRecipe({ ...saved, id: crypto.randomUUID(), updatedAt: new Date().toISOString() })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
+      <div className="rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" style={{ background: 'var(--color-base)', border: '1px solid var(--color-border)', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--color-border)' }}>
+          <h2 className="font-semibold text-base" style={{ color: 'var(--color-text)' }}>
+            {lang === 'it' ? 'Carica una ricetta' : 'Load a recipe'}
+          </h2>
+          <button onClick={onClose} style={{ color: 'var(--color-text-muted)', fontSize: 20, lineHeight: 1 }}>×</button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}>
+              <span style={{ color: 'var(--color-accent)' }}>★</span>
+              {lang === 'it' ? 'Ricette incluse' : 'Included recipes'}
+            </div>
+            <div className="space-y-1">
+              {DEFAULT_RECIPE_TEMPLATES.map(tpl => (
+                <button key={tpl.id} onClick={() => importDefault(tpl)}
+                  className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+                >
+                  <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ background: 'var(--color-surface-deep)' }}>
+                    <img src={tpl.imageUrl} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm truncate" style={{ color: 'var(--color-text)' }}>{getTemplateName(tpl, lang)}</div>
+                    <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {tpl.profile.charAt(0).toUpperCase() + tpl.profile.slice(1)} · {tpl.lines.reduce((s, l) => s + l.weightG, 0)}g {lang === 'it' ? 'base' : 'base'}
+                    </div>
+                  </div>
+                  <div className="ml-auto text-xs shrink-0" style={{ color: 'var(--color-accent)' }}>→</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          {hasSaved && (
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}>
+                {lang === 'it' ? 'Le tue ricette' : 'Your saved recipes'}
+              </div>
+              <div className="space-y-1">
+                {Object.entries(savedSlots).map(([slotName, saved]) => (
+                  <button key={slotName} onClick={() => importSaved(slotName)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                    style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-sm truncate" style={{ color: 'var(--color-text)' }}>{saved.nome || slotName}</div>
+                      <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                        {slotName} · {saved.lines.reduce((s, l) => s + l.weightG, 0).toFixed(0)}g
+                      </div>
+                    </div>
+                    <div className="ml-auto text-xs shrink-0" style={{ color: 'var(--color-accent)' }}>→</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -186,6 +275,7 @@ export default function BilanciamentoTab({ lang }: Props) {
   const t = TRANSLATIONS[lang]
   const [collapsedGroups, setCollapsedGroups] = useState<Set<IngredientGroup>>(new Set())
   const [showSave, setShowSave] = useState(false)
+  const [showLoad, setShowLoad] = useState(false)
 
   const ranges = profileRanges[recipe.profile]
 
@@ -223,6 +313,7 @@ export default function BilanciamentoTab({ lang }: Props) {
 
   return (
     <div className="space-y-4">
+      {showLoad && <LoadRecipeModal lang={lang} onClose={() => setShowLoad(false)} />}
       {showSave && <SaveModal lang={lang} onClose={() => setShowSave(false)} />}
 
       {/* Top bar */}
@@ -238,6 +329,10 @@ export default function BilanciamentoTab({ lang }: Props) {
           style={{ border: '1px solid var(--color-border)', background: 'var(--color-base)', color: 'var(--color-text)' }}>
           {PROFILES.map(p => <option key={p} value={p}>{profileLabels[p]}</option>)}
         </select>
+        <button onClick={() => setShowLoad(true)} className="text-sm font-medium px-4 py-2 rounded-lg"
+          style={{ border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', background: 'transparent' }}>
+          {lang === 'it' ? '↑ Carica' : '↑ Load'}
+        </button>
         <button onClick={() => setShowSave(true)} className="text-sm font-medium px-4 py-2 rounded-lg"
           style={{ background: 'var(--color-accent)', color: 'white' }}>
           {t.actions.salva}
