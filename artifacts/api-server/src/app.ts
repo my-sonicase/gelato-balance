@@ -2,6 +2,8 @@ import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
+import path from "path";
+import { createReadStream, existsSync } from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { sessionMiddleware } from "./lib/auth";
@@ -36,5 +38,25 @@ app.use(sessionMiddleware);
 app.use(authMiddleware);
 
 app.use("/api", router);
+
+// Serve the Vite SPA in production
+if (process.env.NODE_ENV === "production") {
+  const staticDir = path.resolve(
+    import.meta.dirname,
+    "..",
+    "..",
+    "gelato-balancer",
+    "dist",
+    "public",
+  );
+  if (existsSync(staticDir)) {
+    app.use(express.static(staticDir));
+    app.get("*", (_req, res) => {
+      const indexPath = path.join(staticDir, "index.html");
+      const stream = createReadStream(indexPath);
+      stream.pipe(res);
+    });
+  }
+}
 
 export default app;
