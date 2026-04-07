@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install -g pnpm@10 && pnpm install && pnpm run build
-    startCommand: pnpm run start
+    startCommand: pnpm --filter @workspace/db push-force && pnpm run start
     envVars:
       - key: NODE_ENV
         value: production
