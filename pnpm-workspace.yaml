@@ -1,7 +1,8 @@
 minimumReleaseAge: 1440
 
 packages:
-  - artifacts/*
+  - artifacts/api-server
+  - artifacts/gelato-balancer
   - lib/*
   - scripts
 
